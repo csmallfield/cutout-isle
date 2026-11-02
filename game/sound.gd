@@ -17,7 +17,7 @@ func _ready() -> void:
 	player.unit_size = 6.0
 	player.max_distance = 60.0
 	player.follow_reverb_zones = false
-	player.pools = {"swing": 8, "hit.wood": {variants = 6, intensity_steps = 3}}
+	player.pools = {"swing": 8, "hit.wood": {variants = 6, intensity_steps = 3}, "step.grass": {variants = 10, intensity_steps = 3}}
 	var t0 := Time.get_ticks_usec()
 	add_child(player)
 	ok = player.live != null
@@ -51,5 +51,12 @@ static func _map() -> AKCueMap:
 	hit.vary = {"freq_hz": 0.18, "body_hz": 0.15, "decay_s": 0.2}
 	hit.bind = {"intensity": {"gain_db": [-10.0, 0.0]}}
 	hit.send = 0.2
-	m.sounds = {"swing": sw, "hit.wood": hit}
+	# step.grass: a soft, dull scuff with a little weight under it
+	var st := AKRecipe.make(&"click", {"freq_hz": 1400.0, "mode": "low", "q": 0.8, "attack_s": 0.004, "decay_s": 0.035, "body_hz": 110.0, "body": 0.35})
+	var scuff: Array[Dictionary] = [{"voice": &"whoosh", "params": {"length_s": 0.07, "low_hz": 500.0, "high_hz": 2600.0, "peak": 0.2, "shape": 1.2, "noise": "pink"}, "gain_db": -12.0}]
+	st.layers = scuff
+	st.vary = {"freq_hz": 0.3, "decay_s": 0.25, "body_hz": 0.15}
+	st.bind = {"intensity": {"gain_db": [-16.0, -6.0]}}
+	st.send = 0.08
+	m.sounds = {"swing": sw, "hit.wood": hit, "step.grass": st}
 	return m

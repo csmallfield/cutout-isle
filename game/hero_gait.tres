@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="MotionGaitSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/motion_kit/live/motion_gait_settings.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+hip_width = 0.06
+stride = 0.26
+stride_speed_scale = 0.45
+reference_speed = 4.2
+step_time = 0.18
+step_time_fast = 0.13
+lift = 0.06
+lift_shape = 0.8
+lead = 0.05
+settle_distance = 0.03
+settle_delay = 0.1
+plant_dip = 0.014
+dip_stiffness = 260.0
+dip_damping = 18.0
+step_rise = 0.01
+lean_accel = 0.012
+lean_speed = 0.02
+lean_max = 0.22
+lean_stiffness = 120.0
+lean_damping = 14.0
