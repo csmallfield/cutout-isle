@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <!-- Cutout Isle hero, body, front three-quarter: short legs, tunic, belt, arms.
+       The head card sits on top at the neck (80, 8). -->
+  <rect id="leg_l" fill="#3a2f45" x="50" y="112" width="22" height="34" rx="6"/>
+  <rect id="leg_r" fill="#3a2f45" x="88" y="112" width="22" height="34" rx="6"/>
+  <path id="boot_l" fill="#5b3a26" d="M44 140 L74 140 L74 156 L40 156 C40 148 41 143 44 140 Z"/>
+  <path id="boot_r" fill="#5b3a26" d="M86 140 L116 140 C119 143 120 148 120 156 L86 156 Z"/>
+  <path id="arm_l" fill="#3f8f5c" d="M30 40 C20 52 16 74 20 92 L36 92 C36 76 40 60 46 48 Z"/>
+  <path id="arm_r" fill="#3f8f5c" d="M130 40 C140 52 144 74 140 92 L124 92 C124 76 120 60 114 48 Z"/>
+  <circle id="hand_l" fill="#f2bf96" cx="28" cy="96" r="10"/>
+  <circle id="hand_r" fill="#f2bf96" cx="132" cy="96" r="10"/>
+  <path id="tunic" fill="#4fa86c" d="M52 10 L108 10 C122 14 130 28 132 48 L140 118 C120 126 40 126 20 118 L28 48 C30 28 38 14 52 10 Z"/>
+  <path id="collar" fill="#f4e9c8" d="M60 10 L100 10 L80 30 Z"/>
+  <rect id="belt" fill="#5b3a26" x="27" y="78" width="106" height="12" rx="3"/>
+  <rect id="buckle" fill="#e8b84a" x="72" y="76" width="16" height="16" rx="3"/>
+</svg>

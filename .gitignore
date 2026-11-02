@@ -1,0 +1,6 @@
+.godot/
+/addons/motion_kit
+/addons/audio_kit
+/out/
+*.tmp
+.DS_Store

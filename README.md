@@ -1,1 +1,44 @@
-# cutout-isle
+# Cutout Isle
+
+A small playable prototype that tests the Godot Motion Kit and Godot Audio Kit as live game
+systems rather than offline motion graphics: a 2.5D top-down action slice in the spirit of
+*The Swords of Ditto*, with a cutout hero, procedural motion layered on authored poses, flat
+shaded and outlined 3D, and live procedural sound.
+
+The kits (`csmallfield/godot-motion-kit`, `csmallfield/godot-audio-kit`) are private for now,
+so this repo opens only for people with access to them.
+
+## Setup
+
+Godot 4.5.1, Forward+.
+
+```
+git clone https://github.com/csmallfield/cutout-isle
+cd cutout-isle
+tools/setup.sh                 # Linux / macOS
+.\tools\setup.ps1              # Windows (directory junctions, no admin needed)
+```
+
+The setup script links `addons/motion_kit` and `addons/audio_kit` from the kits and fetches
+the audio kit's native core (CI's `audio-kit-native` artifact, through `gh`), which live
+sound needs. To work against kit checkouts next to this one instead of the `vendor/`
+submodules: `KITS_DIR=~/dev tools/setup.sh` or `.\tools\setup.ps1 -KitsDir C:\dev`.
+
+## Controls
+
+Move with WASD, the arrows or the left stick; attack with J, Space or pad X.
+
+F1 toggles the debug overlay: frame timing, draw calls, per-system script cost, and a
+switch for every procedural layer (1 hit-stop, 2 shake, 3 kick, 4 wobble, 5 squash,
+6 flash, 7 ring, 8 sound, 9 bob, 0 paper turn, - smear). F2 cycles the time scale, F3
+switches hit-stop between per entity and global, R resets the worst-frame readout.
+
+## Layout
+
+- `game/`: the prototype (game-specific code only). Reusable techniques go into the kits.
+- `art/`: SVG parts, imported as Motion SVG.
+- `tools/`: setup scripts.
+
+Run `godot --path . -- --autoplay` for scripted input, or
+`godot --headless --path . --fixed-fps 60 -- --bench --actors=10` for a 20 s CPU script-cost
+report with ten extra dummies. Headless numbers are script cost only, never frame rate.

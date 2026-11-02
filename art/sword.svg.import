@@ -1,0 +1,15 @@
+[remap]
+
+importer="motion_kit.svg"
+importer_version=2
+type="Resource"
+uid="uid://dxlv6b5auwbn3"
+path="res://.godot/imported/sword.svg-1d45b83b0d3bcaf70d7d63c5c3f0ad72.res"
+
+[deps]
+
+source_file="res://art/sword.svg"
+dest_files=["res://.godot/imported/sword.svg-1d45b83b0d3bcaf70d7d63c5c3f0ad72.res"]
+
+[params]
+

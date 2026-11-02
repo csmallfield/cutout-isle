@@ -1,0 +1,8 @@
+[submodule "vendor/godot-motion-kit"]
+	path = vendor/godot-motion-kit
+	url = https://github.com/csmallfield/godot-motion-kit
+	branch = feat/live-game
+[submodule "vendor/godot-audio-kit"]
+	path = vendor/godot-audio-kit
+	url = https://github.com/csmallfield/godot-audio-kit
+	branch = feat/live-game

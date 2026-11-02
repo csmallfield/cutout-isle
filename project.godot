@@ -1,0 +1,53 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Cutout Isle"
+config/description="A procedural-animation action slice testing the Godot Motion Kit and Godot Audio Kit as live game systems."
+run/main_scene="res://game/main.tscn"
+config/features=PackedStringArray("4.5", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/window_width_override=1600
+window/size/window_height_override=900
+window/stretch/aspect="expand"
+window/vsync/vsync_mode=1
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/motion_kit/plugin.cfg", "res://addons/audio_kit/plugin.cfg")
+
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="hero"
+3d_physics/layer_3="enemy"
+3d_physics/layer_4="hitbox"
+3d_physics/layer_5="hurtbox"
+
+[physics]
+
+common/physics_ticks_per_second=60
+common/physics_interpolation=true
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+rendering_device/fallback_to_opengl3=true
+anti_aliasing/quality/msaa_3d=2
+environment/defaults/default_clear_color=Color(0.2, 0.55, 0.68, 1)
+
+[autoload]
+
+GameEvents="*res://game/game_events.gd"
