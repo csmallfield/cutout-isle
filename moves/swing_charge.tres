@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MotionPoseCurve" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/motion_kit/live/motion_pose_curve.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+length = 26.0
+fps = 30.0
+channels = {
+"arc": {"keys": [0.0, 3.0, 6.0, 9.0, 14.0, 26.0], "values": [60.0, 170.0, 175.0, -110.0, -118.0, -58.0], "ease": "ease_out"},
+"arc.front": {"keys": [0.0, 3.0, 6.0, 9.0, 14.0, 26.0], "values": [70.0, 160.0, 165.0, -150.0, -155.0, -118.0], "ease": "ease_out"},
+"arc.back": {"keys": [0.0, 3.0, 6.0, 9.0, 14.0, 26.0], "values": [-70.0, -165.0, -170.0, 120.0, 125.0, 88.0], "ease": "ease_out"},
+"weight": {"keys": [0.0, 2.0, 16.0, 26.0], "values": [0.0, 1.0, 1.0, 0.0], "ease": "ease_in_out"},
+"lunge": {"keys": [0.0, 6.0, 9.0, 14.0, 26.0], "values": [0.0, -0.04, 0.24, 0.16, 0.0], "ease": "ease_out"},
+"squash": {"keys": [0.0, 3.0, 6.0, 8.0, 11.0, 18.0], "values": [0.0, -0.1, -0.12, 0.18, -0.06, 0.0], "ease": "ease_out"},
+"torso": {"keys": [0.0, 3.0, 6.0, 9.0, 16.0], "values": [0.0, 14.0, 16.0, -20.0, 0.0], "ease": "ease_out"},
+"head": {"keys": [0.0, 6.0, 9.0, 16.0], "values": [0.0, 6.0, -9.0, 0.0], "ease": "ease_out"}
+}
+markers = {"hold": 4.0, "active_from": 7.0, "active_to": 12.0, "buffer": 99.0, "cancel": 99.0}
+data = {"power": 2.2, "reach": 0.9, "intensity": 1.0}

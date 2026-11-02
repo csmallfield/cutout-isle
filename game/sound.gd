@@ -17,7 +17,7 @@ func _ready() -> void:
 	player.unit_size = 6.0
 	player.max_distance = 60.0
 	player.follow_reverb_zones = false
-	player.pools = {"swing": 8, "hit.wood": {variants = 6, intensity_steps = 3}, "step.grass": {variants = 10, intensity_steps = 3}}
+	player.pools = {"swing": 8, "hit.wood": {variants = 6, intensity_steps = 3}, "step.grass": {variants = 10, intensity_steps = 3}, "charge.full": 3}
 	var t0 := Time.get_ticks_usec()
 	add_child(player)
 	ok = player.live != null
@@ -58,5 +58,10 @@ static func _map() -> AKCueMap:
 	st.vary = {"freq_hz": 0.3, "decay_s": 0.25, "body_hz": 0.15}
 	st.bind = {"intensity": {"gain_db": [-16.0, -6.0]}}
 	st.send = 0.08
-	m.sounds = {"swing": sw, "hit.wood": hit, "step.grass": st}
+	# charge.full: a short bright chime when the charge is ready
+	var ch := AKRecipe.make(&"mallet", {"freq_hz": 1318.5, "material": "glass", "hardness": 0.7, "decay_s": 0.35})
+	ch.vary = {"freq_hz": 0.02}
+	ch.send = 0.3
+	ch.gain_db = -8.0
+	m.sounds = {"swing": sw, "hit.wood": hit, "step.grass": st, "charge.full": ch}
 	return m

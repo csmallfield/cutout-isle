@@ -6,8 +6,8 @@
 #            real time through a hit-stop, Tune.chain_flow); air drag
 #            against the body's velocity seen in the card plane, frame
 #            acceleration, a little wind
-#   squash   MotionSquash spring: an anticipation squash at the swing,
-#            a stretch on the slash, a slight stretch when running
+#   squash   the move's authored squash channel over a MotionSquash spring
+#            (a slight stretch when running)
 class_name HeroSecondary
 extends Node
 
@@ -36,7 +36,6 @@ var _cord := MotionRibbon3D.new()
 var _pouch_card: MeshInstance3D
 var _last_v := Vector3.ZERO
 var _wind_t := 0.0
-var _last_f := 1e6
 
 
 func setup(p_hero: Hero) -> void:
@@ -131,7 +130,7 @@ func physics(delta: float, rate: float) -> void:
 	PerfProbe.end(&"chains", t)
 
 
-func render(frac: float, swing_f: float, swing_keys: PackedFloat64Array, run: float) -> void:
+func render(frac: float, move_squash: float, run: float) -> void:
 	var t := PerfProbe.begin()
 	var tune := Tune.get_or_default()
 	_ribbon_a.update(scarf_a.render_points(frac))
@@ -143,13 +142,9 @@ func render(frac: float, swing_f: float, swing_keys: PackedFloat64Array, run: fl
 	_pouch_card.position = Vector3(pp[n - 1].x, pp[n - 1].y, _pouch_card.position.z)
 	_pouch_card.rotation.z = atan2(dir.y, dir.x) + PI * 0.5
 
-	# squash: anticipation at the start of the swing, stretch on the slash
-	if swing_f < _last_f:                       # a new swing began
-		squash.impulse(-2.2)
-	if _last_f < swing_keys[1] and swing_f >= swing_keys[1]:
-		squash.impulse(4.0)
-	_last_f = swing_f
+	# squash: the move's authored squash on top of a spring (stretch when running)
 	squash.bias = 0.03 * run
-	var s := squash.step(hero.clock.dt) if tune.hero_squash else Vector2.ONE
+	squash.step(hero.clock.dt)
+	var s := MotionSquash.scale_for(clampf(squash.amount() + move_squash, -0.4, 0.4)) if tune.hero_squash else Vector2.ONE
 	hero.cut.scale = Vector3(s.x, s.y, 1.0)
 	PerfProbe.end(&"secondary", t)

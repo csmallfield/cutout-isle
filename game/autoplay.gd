@@ -12,9 +12,18 @@ func _physics_process(_delta: float) -> void:
 	_release()
 	if t < 0.3:
 		Input.action_press(&"move_right")
-	elif t < 4.0:
-		if fmod(t, 0.55) < 0.02:
+	elif t < 2.2:
+		if fmod(t, 0.22) < 0.02:       # mash: the 3-hit combo
 			_tap()
+	elif t < 2.6:
+		pass
+	elif t < 4.0:                      # press and hold: a swing, then charge and release
+		if t < 2.62:
+			_tap()
+		if t < 3.7:
+			Input.action_press(&"attack")
+		elif t < 3.72:
+			_untap()
 	elif t < 5.4:
 		Input.action_press(&"move_down")
 		if t > 4.5:
@@ -39,6 +48,14 @@ func _tap() -> void:
 	var e := InputEventAction.new()
 	e.action = &"attack"
 	e.pressed = true
+	Input.parse_input_event(e)
+
+
+func _untap() -> void:
+	var e := InputEventAction.new()
+	e.action = &"attack"
+	e.pressed = false
+	Input.action_release(&"attack")
 	Input.parse_input_event(e)
 
 

@@ -19,6 +19,7 @@ var _pivot: Node3D
 var _body: MeshInstance3D
 var _ring: MeshInstance3D
 var _flash_ok := true
+var _power := 1.0
 var _rope := MotionChain.new(5, 0.06)
 var _rope_draw := MotionRibbon3D.new()
 var _tag: MeshInstance3D
@@ -96,6 +97,7 @@ func take_hit(info: Dictionary) -> void:
 	var power: float = info.get("power", 1.0)
 	_flash_ok = clock.count(&"hit", 1.0) < 3        # this hit makes at most the 3rd in a second
 	clock.mark(&"hit", info)
+	_power = power
 	if Tune.get_or_default().wobble:
 		_tilt.impulse(Vector2(dir.x, dir.z) * 5.5 * power)
 	GameEvents.emit(&"hit.wood", info.get("point", global_position), power, {target = self, dir = dir})
@@ -109,7 +111,7 @@ func _process(delta: float) -> void:
 	var tilt := _tilt.value if tune.wobble else Vector2.ZERO
 	var f := clock.frames_since(&"hit")
 	# squash: 1 at the hit, settling with a little overshoot (pure in f)
-	var s := (1.0 - MK.spring(f, 0.0, 7.0, 320.0)) * 0.16 if tune.squash else 0.0
+	var s := MotionSquash.land(f, 0.16 * minf(_power, 1.8)) if tune.squash else 0.0
 	var sy := 1.0 - s
 	var sxz := 1.0 / sqrt(maxf(sy, 0.2))
 	_pivot.basis = Basis.from_euler(Vector3(tilt.y * 0.22, 0.0, -tilt.x * 0.22)) * Basis.from_scale(Vector3(sxz, sy, sxz))
@@ -124,7 +126,7 @@ func _process(delta: float) -> void:
 	_ring.visible = ring_on
 	if ring_on:
 		var u := age / 0.32
-		var r := lerpf(0.35, 1.5, 1.0 - pow(1.0 - u, 3.0))
+		var r := lerpf(0.35, 1.2 + 0.4 * _power, 1.0 - pow(1.0 - u, 3.0))
 		_ring.scale = Vector3(r, 1, r)
 		(_ring.material_override as StandardMaterial3D).albedo_color = Color(1, 1, 1, 0.9 * (1.0 - u))
 	var pts := _rope.render_points(Engine.get_physics_interpolation_fraction())

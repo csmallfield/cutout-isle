@@ -4,8 +4,12 @@
 # Procedural layers on the rig, in order (each switchable through Tune):
 #   gait (MotionGait: planted feet in world space, stepping when the body
 #   passes a stride; body dip, rise and lean) -> hips -> legs by IK to the
-#   feet -> arms by IK (sword arm follows the swing arc, the other swings
+#   feet -> arms by IK (sword arm follows the move's arc, the other swings
 #   against the legs) -> head look-at and eyes on springs, blinks.
+# Attacks are authored MotionPoseCurve resources (moves/): a 3-hit combo
+# (press again from a move's "buffer" frame, it chains at "cancel") and a
+# charged swing (hold through a swing, release when charged). Each move
+# has channels per view (arc.front, arc.back) and its own power and reach.
 # Time: everything reads `clock` (a MotionClock under the world clock), so a
 # hit-stop on the hero freezes its pose, its smear and its movement.
 class_name Hero
@@ -23,14 +27,12 @@ const ORIGIN := Vector2(110, 318)     # the feet, in SVG units
 @export var accel_stiffness := 140.0
 ## How far the cards lean back from vertical toward the camera (degrees).
 @export var card_lean_deg := 20.0
-## Swing timing in frames at 30 fps: windup, slash, settle, recover.
-@export var swing_keys := PackedFloat64Array([0.0, 3.0, 6.0, 10.0, 18.0])
-## The sword arm's angle around the shoulder at those keys (degrees, card
-## plane, 0 = forward, 90 = up), drawn facing right.
-@export var swing_arc := PackedFloat64Array([40.0, 135.0, -45.0, -58.0, -58.0])
-## Frames of the swing when the hitbox is live.
-@export var active_from := 3.0
-@export var active_to := 7.0
+## The combo, in order, and the charged swing.
+@export var combo: Array[MotionPoseCurve] = [preload("res://moves/swing_1.tres"), preload("res://moves/swing_2.tres"), preload("res://moves/swing_3.tres")]
+@export var charge_move: MotionPoseCurve = preload("res://moves/swing_charge.tres")
+## Seconds of holding to charge, and how fast the hero walks while charging.
+@export var charge_time := 0.55
+@export var charge_speed_scale := 0.35
 ## The walk: stride, step time, lift, body dip and lean.
 @export var gait_settings: MotionGaitSettings = preload("res://game/hero_gait.tres")
 
@@ -53,10 +55,10 @@ var _shadow: MeshInstance3D
 var _hitbox: Area3D
 var _hit_this_swing := {}
 var _rest := {}                   # view -> cached rest data
-var _keys_a: Array = []           # swing_keys / swing_arc as plain Arrays for MK.interp
-var _arc_a: Array = []
-var _w_keys: Array = []
-var _lunge_keys: Array = []
+var _queued := false              # the next combo hit is buffered
+var _charging := false
+var _charge_t := 0.0
+var _smear_key := ""              # which move / view the smear mesh was built for
 
 
 func setup(p_look: Look, world: MotionClock, pitch_deg: float) -> void:
@@ -93,10 +95,6 @@ func _build() -> void:
 	cut.lean(camera_pitch, card_lean_deg)
 	gait = MotionGait.new(gait_settings, 2)
 	gait.planted.connect(_on_planted)
-	_keys_a = Array(swing_keys)
-	_arc_a = Array(swing_arc)
-	_w_keys = [0.0, 2.0, swing_keys[3], swing_keys[4]]
-	_lunge_keys = [swing_keys[1], swing_keys[2], swing_keys[4]]
 
 	# the sword: a card held in hand_r, moved to whichever view is showing
 	_sword = Cutout.card(look, SWORD, 0.13, Vector2(0.5, 136.0 / 160.0))
@@ -150,34 +148,48 @@ func _attach(view: StringName, _mirrored: bool) -> void:
 	_sword.position = Vector3(0, -0.012, z - 0.025)
 	hand.add_child(_sword)
 	var torso: Node3D = rig.part(_rest[view].torso)
-	_smear.position = (_rest[view].shoulder_r as Vector3) - rig.rig_transform(_rest[view].torso).origin
+	var head_z: float = (rig.meshes[&"head"] as MeshInstance3D).mesh.get_aabb().position.z if rig.meshes.has(&"head") else 0.1
+	var p: Vector3 = (_rest[view].shoulder_r as Vector3) - rig.rig_transform(_rest[view].torso).origin
+	_smear.position = Vector3(p.x, p.y, head_z - 0.003)      # in the body's stack, behind the head
 	torso.add_child(_smear)
+	_smear_key = ""
 
 
-## A crescent for the slash frames: the sweep of the sword tip around the
-## shoulder, in the card plane, drawn over everything.
+## The smear: an empty mesh rebuilt per move and view (_rebuild_smear), with
+## a depth-tested alpha material, so it sits behind the head and over the
+## torso instead of across the face.
 func _build_smear() -> MeshInstance3D:
-	var st := MotionFlat3D.begin()
-	var seg := 20
-	var r_out := 0.36
-	for i in seg:
-		var a0 := deg_to_rad(lerpf(swing_arc[1], swing_arc[2], float(i) / seg))
-		var a1 := deg_to_rad(lerpf(swing_arc[1], swing_arc[2], float(i + 1) / seg))
-		var w0 := sin(PI * float(i) / seg)          # thick in the middle
-		var w1 := sin(PI * float(i + 1) / seg)
-		var p0o := Vector3(cos(a0), sin(a0), 0) * r_out
-		var p1o := Vector3(cos(a1), sin(a1), 0) * r_out
-		MotionFlat3D.quad(st, p0o * (1.0 - 0.45 * w0), p1o * (1.0 - 0.45 * w1), p1o, p0o, Vector3.BACK, Vector2.ZERO, Color("#fffbe8"))
 	_smear_mat = StandardMaterial3D.new()
 	_smear_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_smear_mat.vertex_color_use_as_albedo = true
 	_smear_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_smear_mat.no_depth_test = true
 	_smear_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_smear_mat.render_priority = 1
-	var mi := MotionFlat3D.instance(st.commit(), _smear_mat)
+	var mi := MeshInstance3D.new()
+	mi.material_override = _smear_mat
 	mi.visible = false
 	return mi
+
+
+## A crescent along the move's arc over its active frames (shoulder space).
+func _rebuild_smear(move: MotionPoseCurve, view: StringName, sx: float) -> void:
+	var key := "%s|%s" % [move.resource_path, view]
+	if key == _smear_key:
+		return
+	_smear_key = key
+	var a_from := float(move.sample(&"arc", move.marker(&"active_from") - 1.0, view))
+	var a_to := float(move.sample(&"arc", move.marker(&"active_to"), view))
+	var st := MotionFlat3D.begin()
+	var seg := 22
+	var r_out := float(_rest[view].arm_len) + 0.17
+	for i in seg:
+		var a0 := deg_to_rad(lerpf(a_from, a_to, float(i) / seg))
+		var a1 := deg_to_rad(lerpf(a_from, a_to, float(i + 1) / seg))
+		var w0 := sin(PI * float(i) / seg)          # thick in the middle
+		var w1 := sin(PI * float(i + 1) / seg)
+		var p0o := Vector3(cos(a0) * sx, sin(a0), 0) * r_out
+		var p1o := Vector3(cos(a1) * sx, sin(a1), 0) * r_out
+		MotionFlat3D.quad(st, p0o * (1.0 - 0.5 * w0), p1o * (1.0 - 0.5 * w1), p1o, p0o, Vector3.BACK, Vector2.ZERO, Color("#fffbe8"))
+	_smear.mesh = st.commit()
 
 
 # ------------------------------------------------------------------ input and movement
@@ -189,7 +201,7 @@ func _physics_process(delta: float) -> void:
 	var input := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
 	_move.damping = accel_damping
 	_move.stiffness = accel_stiffness
-	_move.target = Vector3(input.x, 0.0, input.y) * speed
+	_move.target = Vector3(input.x, 0.0, input.y) * speed * (charge_speed_scale if _charging else 1.0)
 	var v := _move.step(d)
 	if input.length() > 0.2:
 		aim = Vector3(input.x, 0.0, input.y).normalized()
@@ -207,8 +219,17 @@ func _physics_process(delta: float) -> void:
 
 
 func _face_dir() -> Vector3:
-	var swinging := clock.frames_since(&"swing") < swing_keys[4]
-	return clock.last_data(&"swing").get("aim", aim) if swinging else aim
+	return clock.last_data(&"swing").get("aim", aim) if current_move() else aim
+
+
+## The move playing now (null when none), and frames into it.
+func current_move() -> MotionPoseCurve:
+	var m: MotionPoseCurve = clock.last_data(&"swing").get("move")
+	return m if m and move_frame() < m.length else null
+
+
+func move_frame() -> float:
+	return clock.frames_since(&"swing") + float(clock.last_data(&"swing").get("start", 0.0))
 
 
 func _on_planted(_foot: int, pos: Vector3) -> void:
@@ -218,22 +239,69 @@ func _on_planted(_foot: int, pos: Vector3) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"attack"):
-		swing()
+		attack()
+	elif event.is_action_released(&"attack") and _charging:
+		_release_charge()
 
 
-## Start a swing (ignored while one is still slashing).
-func swing() -> void:
-	if clock.frames_since(&"swing") < swing_keys[3]:
+## Let go of a charge: the charged swing if it was full, else nothing.
+func _release_charge() -> void:
+	_charging = false
+	if _charge_t >= charge_time:
+		_start(charge_move, -1, charge_move.marker(&"hold", 0.0))
+	_charge_t = 0.0
+
+
+## Attack pressed: start the combo, or buffer its next hit.
+func attack() -> void:
+	var m := current_move()
+	if m == null:
+		_start(combo[0], 0)
 		return
+	var step: int = clock.last_data(&"swing").get("step", -1)
+	if step >= 0 and step < combo.size() - 1 and move_frame() >= m.marker(&"buffer", 0.0):
+		_queued = true
+
+
+func _start(move: MotionPoseCurve, step: int, start := 0.0) -> void:
+	_queued = false
 	_hit_this_swing.clear()
-	clock.mark(&"swing", {aim = aim})
-	GameEvents.emit(&"swing", global_position, 1.0, {source = self})
+	clock.mark(&"swing", {aim = aim, move = move, step = step, start = start})
+	GameEvents.emit(&"swing", global_position, float(move.data.get("intensity", 1.0)), {source = self, step = step})
+
+
+## Combo chaining and charging, once per rendered frame.
+func _update_moves(dt: float) -> void:
+	var m: MotionPoseCurve = clock.last_data(&"swing").get("move")
+	var f := move_frame()
+	var step: int = clock.last_data(&"swing").get("step", -1)
+	if m and _queued and f >= m.marker(&"cancel", INF):
+		_start(combo[step + 1], step + 1)
+		return
+	var done := m == null or f >= m.length
+	var held := Input.is_action_pressed(&"attack")
+	# holding through the end of a swing starts a charge
+	if not _charging and held and m and step >= 0 and f >= m.marker(&"cancel", m.length) and not _queued:
+		_charging = true
+		_charge_t = 0.0
+	if _charging:
+		if not held:
+			_release_charge()
+			return
+		else:
+			var was := _charge_t
+			_charge_t += dt
+			if was < charge_time and _charge_t >= charge_time:
+				GameEvents.emit(&"charge.full", global_position, 1.0, {source = self})
+	if done and not _charging:
+		_queued = false
 
 
 func _update_hitbox() -> void:
-	var f := clock.frames_since(&"swing")
-	_hitbox.position = aim * 0.62 + Vector3(0, 0.5, 0)
-	if f < active_from or f > active_to:
+	var m := current_move()
+	var reach := float(m.data.get("reach", 0.62)) if m else 0.62
+	_hitbox.position = _face_dir() * reach + Vector3(0, 0.5, 0)
+	if m == null or not m.between(move_frame(), &"active_from", &"active_to"):
 		return
 	for area in _hitbox.get_overlapping_areas():
 		var target := area.get_parent() as Node3D
@@ -243,7 +311,8 @@ func _update_hitbox() -> void:
 		var dir: Vector3 = target.global_position - global_position
 		dir.y = 0.0
 		dir = dir.normalized() if dir.length() > 0.01 else aim
-		var info := {dir = dir, power = 1.0, attacker = self, point = target.global_position + Vector3(0, 0.6, 0)}
+		var info := {dir = dir, power = float(m.data.get("power", 1.0)), attacker = self, move = m,
+			point = target.global_position + Vector3(0, 0.6, 0) - dir * 0.25}
 		target.take_hit(info)
 		hit_landed.emit(target, info)
 
@@ -256,9 +325,10 @@ func _process(delta: float) -> void:
 	var dt := clock.dt
 	var tune := Tune.get_or_default()
 
-	# facing: the swing's aim while slashing, else where we move
-	var f := clock.frames_since(&"swing")
-	var swinging := f < swing_keys[4]
+	# moves first (a chained hit starts this frame), then facing
+	_update_moves(dt)
+	var move := current_move()
+	var f := move_frame()
 	var face_dir := _face_dir()
 	cut.paper_turn = tune.paper_turn
 	cut.face(Vector2(face_dir.x, face_dir.z))
@@ -283,8 +353,10 @@ func _process(delta: float) -> void:
 	var across := Vector3(-fdir.z, 0, fdir.x)
 	var lean_world := fdir * gb.x + across * gb.z
 	var mirror := -1.0 if cut.mirrored else 1.0
+	var view := cut.view
+	var torso_deg := float(move.sample(&"torso", f, view)) if move else (6.0 if _charging else 0.0)
 	for p: StringName in rd.lean_parts:
-		rig.pose(p, -lean_world.x * mirror)
+		rig.pose(p, -lean_world.x * mirror + deg_to_rad(torso_deg) * (sx if not side else 1.0))
 
 	# legs: IK to the planted / stepping feet
 	var hips: Vector3 = rd.hips
@@ -298,9 +370,19 @@ func _process(delta: float) -> void:
 	rig.solve_limb(&"leg_l_upper", &"leg_l_lower", &"foot_l", targets[0], 1.0 if side else signf((rd.foot_l as Vector3).x - hips.x))
 	rig.solve_limb(&"leg_r_upper", &"leg_r_lower", &"foot_r", targets[1], 1.0 if side else signf((rd.foot_r as Vector3).x - hips.x))
 
-	# sword arm: rest by the side, or around the shoulder along the swing arc
-	var w := MK.interp(f, _w_keys, [0.0, 1.0, 1.0, 0.0], MK.ease_in_out) if swinging else 0.0
-	var phi := deg_to_rad(MK.interp(f, _keys_a, _arc_a, MK.ease_out)) if swinging else 0.0
+	# sword arm: rest by the side, around the shoulder along the move's arc,
+	# or held back while charging
+	var w := 0.0
+	var phi := 0.0
+	var blade_off := 0.0
+	if move:
+		w = float(move.sample(&"weight", f, view))
+		phi = move.sample_deg(&"arc", f, view)
+		blade_off = move.sample_deg(&"blade", f, view)
+	elif _charging:
+		var hold := charge_move.marker(&"hold", 0.0)
+		w = clampf(_charge_t / 0.12, 0.0, 1.0)
+		phi = charge_move.sample_deg(&"arc", hold, view)
 	var sh: Vector3 = rig.rig_transform(rd.torso) * (rig.rest[&"arm_r_upper"] as Transform3D).origin
 	var arc_hand := sh + Vector3(cos(phi) * sx, sin(phi), 0) * (rd.arm_len as float)
 	var hand_rest: Vector3 = rd.hand_r + Vector3(0, bob, 0)
@@ -308,10 +390,16 @@ func _process(delta: float) -> void:
 	var elbow_out := signf((rd.hand_r as Vector3).x - hips.x) if not side else -1.0
 	rig.solve_limb(&"arm_r_upper", &"arm_r_lower", &"hand_r", hand_t, elbow_out if w < 0.5 else -elbow_out)
 	var blade_rest := atan2(sin(deg_to_rad(-62.0)), cos(deg_to_rad(-62.0)) * sx)    # lowered, tip forward
-	var blade_arc := atan2(sin(phi), cos(phi) * sx)
+	var blade_arc := atan2(sin(phi + blade_off), cos(phi + blade_off) * sx)
 	var blade := lerp_angle(blade_rest, blade_arc, w)
 	var hand_rot := rig.rig_transform(&"hand_r").basis.x
 	_sword.rotation.z = blade - PI * 0.5 - atan2(hand_rot.y, hand_rot.x)
+	# charge glow on the blade: a small, slow pulse (photosensitivity: under 3 a second)
+	var glow := 0.0
+	if _charging:
+		var full := _charge_t >= charge_time
+		glow = (0.35 + 0.35 * sin(clock.time * TAU * (2.5 if full else 1.2))) * clampf(_charge_t / charge_time, 0.0, 1.0)
+	MotionFlat3D.set_flash(_sword, Color("#ffe9a8"), glow)
 
 	# other arm: hangs and swings against the legs
 	var swing_x := ((targets[1] as Vector3).x - (rd.foot_r as Vector3).x) * (0.7 if side else 0.2)
@@ -327,20 +415,26 @@ func _process(delta: float) -> void:
 	_head_aim.limit_min = deg_to_rad(-9.0)
 	_head_aim.limit_max = deg_to_rad(9.0)
 	_head_aim.target = -look_dir.x * mirror * deg_to_rad(7.0) * (0.0 if side else 1.0) - lean_world.x * mirror * 0.5
-	rig.pose(&"head", _head_aim.step(dt))
+	var head_deg := float(move.sample(&"head", f, view)) if move else 0.0
+	rig.pose(&"head", _head_aim.step(dt) + deg_to_rad(head_deg) * (sx if not side else 1.0))
 	_eyes.target = Vector2(look_dir.x * mirror * (0.6 if side else 1.0), -look_dir.y * 0.5) * 0.012
 	var eo := _eyes.step(dt)
 	if rig.has_part(&"eyes"):
 		var blink := 1.0 - 0.9 * MK.win(fmod(clock.time, 3.7) * 30.0, 0.0, 4.0, 1.5)
 		rig.pose(&"eyes", 0.0, eo, Vector2(1.0, blink))
 
-	# smear and lunge
-	var smear_on := tune.smear and f >= swing_keys[1] and f < swing_keys[3] + 2.0
+	# smear over the active frames, lunge
+	var smear_on := false
+	if move and tune.smear:
+		var a0 := move.marker(&"active_from") - 1.0
+		var a1 := move.marker(&"active_to") + 3.0
+		smear_on = f >= a0 and f < a1
+		if smear_on:
+			_rebuild_smear(move, view, sx)
+			_smear_mat.albedo_color = Color(1, 1, 1, 0.9 * (1.0 - MK.prog(f, a1 - 4.0, 4.0)))
 	_smear.visible = smear_on
-	if smear_on:
-		_smear.scale = Vector3(sx, 1, 1)
-		_smear_mat.albedo_color = Color(1, 1, 1, 0.85 * (1.0 - MK.prog(f, swing_keys[2], 6.0)))
-	var lunge := MK.interp(f, _lunge_keys, [0.0, 1.0, 0.0], MK.ease_out) if swinging else 0.0
-	cut.position = face_dir * 0.08 * lunge
+	var lunge := float(move.sample(&"lunge", f, view)) if move else 0.0
+	cut.position = face_dir * lunge
 	PerfProbe.end(&"hero.pose", t)
-	secondary.render(frac, f, swing_keys, clampf(spd / speed, 0.0, 1.0))
+	var squash := float(move.sample(&"squash", f, view)) if move else (-0.07 if _charging else 0.0)
+	secondary.render(frac, squash, clampf(spd / speed, 0.0, 1.0))

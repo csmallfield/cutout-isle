@@ -44,7 +44,7 @@ func _ready() -> void:
 	var juice := Juice.new()
 	juice.name = "Juice"
 	add_child(juice)
-	juice.setup(world, rig)
+	juice.setup(world, rig, look)
 
 	var sound := Sound.new()
 	sound.name = "Sound"
