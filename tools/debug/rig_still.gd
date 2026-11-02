@@ -1,13 +1,13 @@
-# Debug still: the hero views side by side (front, front 3/4, side, back 3/4, back), big, straight on.
+# Debug still: the hero views side by side (front, side, side facing left, back), big, straight on.
 #   godot --path . --write-movie out/rig/f.png --fixed-fps 30 --quit-after 2 res://tools/debug/rig_still.tscn
 extends Node3D
 
 
 func _ready() -> void:
 	var look := Look.new(self)
-	var x := -1.6
-	for v in [&"front", &"front_34", &"side", &"back_34", &"back"]:
-		var rig := MotionCutoutRig.build(MotionSvgData.load_any(Hero.VIEWS[v]), Hero.WIDTH, look.cutout, look.card_edges, {origin = Hero.ORIGIN})
+	var x := -1.2
+	for v in [&"front", &"side", &"side_left", &"back"]:
+		var rig := MotionCutoutRig.build(Hero.view_data(v), Hero.WIDTH, look.cutout, look.card_edges, {origin = Hero.ORIGIN})
 		add_child(rig)
 		rig.position = Vector3(x, 0, 0)
 		x += 0.8

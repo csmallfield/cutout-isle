@@ -20,6 +20,7 @@ rates or GPU costs.** They are CPU script costs, and the frame rate needs Chris'
 | 5 | Sound sheet, ground surfaces, live voices, music driven by game state, dash |
 | 6 | The island chunk, a cave with a lens blend, blobs and grunts, the HUD |
 | 7 | Consolidation: kit helpers, kit example scene, skill sections, this note |
+| 8 | Four directions with the sword in one hand: right-handed front and back, a partial mirror for the left, back-view arms behind the body, one material per character |
 
 ## The five goals
 
@@ -115,25 +116,41 @@ posing. Sound pools take about 1.1 s to render at load.
    MotionWarmup draws every material once at load, and Forward+ ubershaders should cover the rest.
 5. Compare F3 (per-entity against global hit-stop) and H (chains through hit-stop) by feel.
 
-## 8 directions (branch exp/8-dir)
+## Phase 8: four directions, one sword hand
 
-The hero and grunts face 8 ways: two new drawings, front 3/4 and back 3/4, sit between the
-front, side and back views, and mirroring covers the left (five drawings, eight directions).
-MotionCutout now picks views by facing angle, and a turn between neighbours 45 degrees
-apart narrows the card halfway instead of flipping it edge-on. The 3/4 views use the side
-view's move arcs (no per-view keys yet), and V toggles 4 against 8 in play.
+**8 directions, tried and dropped.** Branch `exp/8-dir` added front 3/4 and back 3/4
+drawings. It didn't read well enough to justify five drawings per character. The kit kept
+the general view-by-angle choice from it.
 
-`tools/debug/turntable.gd` walks the hero in each direction and swings. The capture
-`eight_dir_compare.mp4` shows 4 and 8 side by side.
+**The fix in this phase.** The old front and back drawings held the sword in the hero's
+left hand, and every view mirrored with the facing, so the sword switched hands on every
+turn. Now:
 
-Building it surfaced a real scaling limit. Each rig part had its own instance uniforms
-(flash, tint, opacity), and each such mesh holds a block of a global shader buffer. Under
-the Compatibility renderer that buffer fits about 290 meshes on Mesa (Forward+ has far more
-room). Five views for the hero and two grunts went over it, and some views rendered black.
-Characters now use one actor material each, with plain uniforms shared by all their parts
-and views. That takes the count from 307 such meshes to 15 and lifts the limit for any
-number of views. Script cost is unchanged (1.24 ms total on the bench), because only the
-showing view is posed.
+- **Front and back never flip.** Both are drawn right-handed: the sword is on screen left
+  from the front and on screen right from behind. From behind, both arms are drawn under
+  the tunic and head, so a wind-up goes behind the head.
+- **Facing left is a partial mirror.** It uses the side drawing flipped with left and right
+  parts swapped (`MotionSvgData.mirrored()`). The sword arm becomes the far arm, behind the
+  body and in the far-side shade, and the free arm comes to the front.
+- **The paper turn between the right- and left-facing drawings** narrows edge-on, like the
+  old flip.
+- **The smear goes behind the body** whenever the sword arm is.
+- **The pouch stays on the right hip in every view.** It hangs behind the body when the
+  hero faces left. The scarf mirrors with the turn.
+- **Grunts share the hero's rig**, so they get the same fix.
+
+`four_dir_handedness.mp4` compares the old plain mirror with the new views on the
+turntable (`tools/debug/turntable.gd`).
+
+**Carried over from the 8-direction branch.** Each character has one actor material
+(flash and tint as plain uniforms) instead of per-part instance uniforms. Per-part
+instance uniforms ran out of the Compatibility renderer's global buffer at about 290
+meshes. The scene now uses 15 such meshes, down from about 300, and script cost is
+unchanged (1.34 ms total on the bench).
+
+**Tradeoff to judge.** Facing left, the swing starts behind the body, so the wind-up reads
+weaker than facing right. That is the physically correct look. If it reads too weak, the
+alternative is to bring the sword arm in front during the active frames only.
 
 ## Open items
 

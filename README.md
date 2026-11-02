@@ -35,8 +35,7 @@ F1 toggles the debug overlay: frame timing, draw calls, per-system script cost, 
 switch for every procedural layer (1 hit-stop, 2 shake, 3 kick, 4 wobble, 5 squash,
 6 flash, 7 ring, 8 sound, 9 bob, 0 paper turn, - smear). F2 cycles the time scale, F3
 switches hit-stop between per entity and global, R resets the worst-frame readout, C / H / Q
-toggle chains, chains flowing through hit-stop and the hero's squash, V switches the hero
-and grunts between 8 directions (five drawn views) and 4 (three), F5 / F6 hurt and heal
+toggle chains, chains flowing through hit-stop and the hero's squash, F5 / F6 hurt and heal
 the hero (to hear the low-health drone and heartbeat).
 
 ## Sound

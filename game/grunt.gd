@@ -1,4 +1,4 @@
-# The sword grunt: the hero's cutout rig (all five views, 8 directions) in a
+# The sword grunt: the hero's cutout rig (its four views, sword in the right hand) in a
 # darker tint, walking on a MotionGait, attacking with the hero's first
 # swing after a held windup that telegraphs it (the blade glows), staggering
 # back when hit, falling flat on a KO. A slimmer pose than the hero's: no
@@ -27,11 +27,10 @@ func _build_visual() -> void:
 	cut.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_child(cut)
 	var mat := look.flat.actor()       # one material for every part and view (no instance uniforms)
-	cut.hysteresis = 7.0
 	for v: StringName in Hero.VIEWS:
-		var rig := MotionCutoutRig.build(MotionSvgData.load_any(Hero.VIEWS[v]), Hero.WIDTH * 0.95, mat, look.card_edges, {origin = Hero.ORIGIN})
+		var rig := MotionCutoutRig.build(Hero.view_data(v), Hero.WIDTH * 0.95, mat, look.card_edges, {origin = Hero.ORIGIN})
 		rig.set_tint(TINT)
-		cut.add_view(v, rig)
+		cut.add_view(v, rig, NAN, Hero.VIEW_STYLE[v].facing)
 		_rest[v] = {
 			torso = rig.parent_of[&"arm_r_upper"],
 			hips = rig.rest_pivot(&"hips"), hand_r = rig.rest_pivot(&"hand_r"), hand_l = rig.rest_pivot(&"hand_l"),
@@ -107,13 +106,13 @@ func _pose(dt: float) -> void:
 	var style: Dictionary = Hero.VIEW_STYLE[cut.view]
 	var side: bool = style.side > 0.5
 	var sx: float = style.sx
+	var fx: float = style.fx
 	rig.reset_pose()
 	var frac := Engine.get_physics_interpolation_fraction()
 	var body := get_global_transform_interpolated().origin
 	rig.pose(&"hips", 0.0, Vector2(0, gait.body.y))
 	var stagger := MotionSquash.land(clock.frames_since(&"hit"), -1.0) if state == State.STAGGER else 0.0
-	var mirror := -1.0 if cut.mirrored else 1.0
-	var lean := -gait.body.x * mirror * (1.0 if side else 0.0) + stagger * 0.35
+	var lean := -gait.body.x * fx * (1.0 if side else 0.0) + stagger * 0.35
 	for p in [&"torso", &"chest"]:
 		if rig.has_part(p):
 			rig.pose(p, lean)
@@ -123,7 +122,7 @@ func _pose(dt: float) -> void:
 	for i in 2:
 		var m := cut.ground_to_card(gait.foot(i, frac) - body)
 		var rf: Vector3 = feet[i]
-		rig.solve_limb(names[i][0], names[i][1], names[i][2], Vector3(m.x, rf.y + m.y, 0), 1.0 if side else signf(rf.x - hips.x))
+		rig.solve_limb(names[i][0], names[i][1], names[i][2], Vector3(m.x, rf.y + m.y, 0), fx if side else signf(rf.x - hips.x))
 	# sword arm: rest, the held windup, or the swing
 	var w := 0.0
 	var phi := 0.0
@@ -135,7 +134,7 @@ func _pose(dt: float) -> void:
 		phi = SWING.sample_deg(&"arc", 2.6 if _state_t < TELEGRAPH else f, cut.view)
 	var sh: Vector3 = rig.rig_transform(rd.torso) * (rig.rest[&"arm_r_upper"] as Transform3D).origin
 	var hand_t: Vector3 = (rd.hand_r as Vector3).lerp(sh + Vector3(cos(phi) * sx, sin(phi), 0) * float(rd.arm_len), w)
-	var elbow := signf((rd.hand_r as Vector3).x - hips.x) if not side else -1.0
+	var elbow := signf((rd.hand_r as Vector3).x - hips.x) if not side else -fx
 	rig.solve_limb(&"arm_r_upper", &"arm_r_lower", &"hand_r", hand_t, elbow if w < 0.5 else -elbow)
 	var blade := lerp_angle(atan2(sin(deg_to_rad(-62.0)), cos(deg_to_rad(-62.0)) * sx), atan2(sin(phi), cos(phi) * sx), w)
 	var hx := rig.rig_transform(&"hand_r").basis.x
@@ -145,4 +144,4 @@ func _pose(dt: float) -> void:
 		glow = 0.5 + 0.3 * sin(_state_t * TAU * 2.4)            # the tell: under 3 pulses a second
 	MotionFlat3D.set_flash(_sword, Color("#ffd27a"), glow)
 	var hl: Vector3 = rd.hand_l
-	rig.solve_limb(&"arm_l_upper", &"arm_l_lower", &"hand_l", hl, signf(hl.x - hips.x) if not side else -1.0)
+	rig.solve_limb(&"arm_l_upper", &"arm_l_lower", &"hand_l", hl, signf(hl.x - hips.x) if not side else -fx)

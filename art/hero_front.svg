@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 330">
-  <!-- Cutout Isle hero, front three-quarter view. Rig parts are groups with a pivot
-       marker (id "pivot..."); document order is draw order; class "flat" = no outline.
-       Feet rest at (110, 318). -->
-  <g id="hips"><circle id="pivot-hips" cx="110" cy="262" r="2" fill="none"/>
+  <!-- Cutout Isle hero, front view, never mirrored in play: the sword arm (arm_r)
+       is the hero's right, on screen left. The whole drawing is flipped by the
+       transform on "hips" (drawn with the sword arm on the right, then turned
+       round). Rig parts are groups with a pivot marker (id "pivot..."); document
+       order is draw order; class "flat" = no outline. Feet rest at (110, 318). -->
+  <g id="hips" transform="matrix(-1 0 0 1 220 0)"><circle id="pivot-hips" cx="110" cy="262" r="2" fill="none"/>
     <g id="leg_l_upper"><circle id="pivot-leg_l_upper" cx="94" cy="268" r="2" fill="none"/>
       <rect fill="#3a2f45" x="84" y="264" width="20" height="28" rx="7"/>
       <g id="leg_l_lower"><circle id="pivot-leg_l_lower" cx="94" cy="290" r="2" fill="none"/>

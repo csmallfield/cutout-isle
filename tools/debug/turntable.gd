@@ -1,8 +1,7 @@
 # Turntable: the hero walks a short way in each of the 8 directions in turn,
 # stops and swings, so every view and every turn between views shows up in
-# one capture. V in the overlay (Tune.eight_dir) compares 4 directions.
-#   godot --path . --write-movie out/tt/f.png --fixed-fps 60 --quit-after 900 -s res://tools/debug/turntable.gd -- --turntable
-#   add --four for 4 directions
+# one capture.
+#   godot --path . --write-movie out/tt/f.png --fixed-fps 60 --quit-after 840 -s res://tools/debug/turntable.gd -- --turntable
 extends SceneTree
 
 const DIRS := [Vector2(1, 0), Vector2(1, 1), Vector2(0, 1), Vector2(-1, 1), Vector2(-1, 0), Vector2(-1, -1), Vector2(0, -1), Vector2(1, -1)]
@@ -13,8 +12,6 @@ var frames := 0
 
 
 func _initialize() -> void:
-	if OS.get_cmdline_user_args().has("--four"):
-		Tune.get_or_default().eight_dir = false
 	change_scene_to_file("res://game/main.tscn")
 
 

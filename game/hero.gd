@@ -1,7 +1,10 @@
 # The hero: 8-way analogue movement, a sword swing with a hitbox, and a
-# cutout rig in five views (front, front 3/4, side, back 3/4, back; mirrored
-# for 8 directions, Tune.eight_dir drops to 4) with a paper turn between
-# them (MotionCutout / MotionCutoutRig from the motion kit).
+# cutout rig in four views with a paper turn between them (MotionCutout /
+# MotionCutoutRig from the motion kit). Nothing is plainly mirrored, so the
+# sword stays in the right hand: front and back are drawn right-handed and
+# never flip, and facing left uses the side drawing mirrored with left and
+# right parts swapped (MotionSvgData.mirrored), which makes the sword arm
+# the far arm, behind the body.
 # Procedural layers on the rig, in order (each switchable through Tune):
 #   gait (MotionGait: planted feet in world space, stepping when the body
 #   passes a stride; body dip, rise and lean) -> hips -> legs by IK to the
@@ -18,15 +21,21 @@ extends CharacterBody3D
 
 signal hit_landed(target: Node, info: Dictionary)
 
-const VIEWS := {&"front": "res://art/hero_front.svg", &"back": "res://art/hero_back.svg", &"side": "res://art/hero_side.svg",
-	&"front_34": "res://art/hero_front_34.svg", &"back_34": "res://art/hero_back_34.svg"}
-## How each view poses: `side` 0 for straight-on views, 1 side on (legs bend
-## forward, the head turns less); `sx` -1 where the sword arm's arcs mirror
-## (the back view). The 3/4 views use the side arcs (moves fall back to the
-## base channels).
+const VIEWS := {&"front": "res://art/hero_front.svg", &"back": "res://art/hero_back.svg",
+	&"side": "res://art/hero_side.svg", &"side_left": "res://art/hero_side.svg"}
+## How each view poses and turns:
+##   facing  MotionCutout side: EITHER never flips, RIGHT / LEFT one way only
+##   side    0 straight on, 1 side on (legs bend forward, the head turns less)
+##   fx      which way a side view faces on the card (+1 right, -1 left)
+##   sx      -1 where the sword arm's arcs mirror on the card
+##   behind  the sword arm is behind the body (the smear goes behind it too)
+## side_left is the side drawing mirrored with left and right swapped
+## (view_data); its moves use the side arcs mirrored (sx -1).
 const VIEW_STYLE := {
-	&"front": {side = 0.0, sx = 1.0}, &"front_34": {side = 0.6, sx = 1.0}, &"side": {side = 1.0, sx = 1.0},
-	&"back_34": {side = 0.6, sx = 1.0}, &"back": {side = 0.0, sx = -1.0},
+	&"front": {facing = MotionCutout.EITHER, side = 0.0, fx = 1.0, sx = -1.0, behind = false},
+	&"back": {facing = MotionCutout.EITHER, side = 0.0, fx = 1.0, sx = 1.0, behind = true},
+	&"side": {facing = MotionCutout.RIGHT, side = 1.0, fx = 1.0, sx = 1.0, behind = false},
+	&"side_left": {facing = MotionCutout.LEFT, side = 1.0, fx = -1.0, sx = -1.0, behind = true},
 }
 const SWORD := "res://art/sword.svg"
 const WIDTH := 0.8                    # card width in metres (220 SVG units)
@@ -112,9 +121,9 @@ func _build() -> void:
 	add_child(cut)
 	var mat := look.flat.actor()       # one material for every part and view (no instance uniforms)
 	for v: StringName in VIEWS:
-		var rig := MotionCutoutRig.build(MotionSvgData.load_any(VIEWS[v]), WIDTH, mat, look.card_edges, {origin = ORIGIN})
+		var rig := MotionCutoutRig.build(view_data(v), WIDTH, mat, look.card_edges, {origin = ORIGIN})
 		rig.name = String(v)
-		cut.add_view(v, rig)
+		cut.add_view(v, rig, NAN, VIEW_STYLE[v].facing)
 		_rest[v] = _rest_data(rig)
 	cut.lean(camera_pitch, card_lean_deg)
 	gait = MotionGait.new(gait_settings, 2)
@@ -157,6 +166,18 @@ func _build() -> void:
 	add_child(_hitbox)
 
 
+static var _data := {}
+
+
+## The drawing for a view: side_left is the side drawing mirrored about the
+## feet with left and right parts swapped (the partial mirror).
+static func view_data(v: StringName) -> MotionSvgData:
+	if not _data.has(v):
+		var d := MotionSvgData.load_any(VIEWS[v])
+		_data[v] = d.mirrored(ORIGIN.x) if v == &"side_left" else d
+	return _data[v]
+
+
 ## What the pose code needs from a view, measured once.
 func _rest_data(rig: MotionCutoutRig) -> Dictionary:
 	var torso: StringName = rig.parent_of[&"arm_r_upper"]
@@ -187,8 +208,11 @@ func _attach(view: StringName, _mirrored: bool) -> void:
 	hand.add_child(_sword)
 	var torso: Node3D = rig.part(_rest[view].torso)
 	var head_z: float = (rig.meshes[&"head"] as MeshInstance3D).mesh.get_aabb().position.z if rig.meshes.has(&"head") else 0.1
+	var arm_z: float = (rig.meshes[&"arm_r_upper"] as MeshInstance3D).mesh.get_aabb().position.z if rig.meshes.has(&"arm_r_upper") else 0.0
 	var p: Vector3 = (_rest[view].shoulder_r as Vector3) - rig.rig_transform(_rest[view].torso).origin
-	_smear.position = Vector3(p.x, p.y, head_z - 0.003)      # in the body's stack, behind the head
+	# in the body's stack: behind the head, or behind the body with an arm that is
+	var smear_z := arm_z - 0.003 if VIEW_STYLE[view].behind else head_z - 0.003
+	_smear.position = Vector3(p.x, p.y, smear_z)
 	torso.add_child(_smear)
 	_smear_key = ""
 
@@ -459,9 +483,6 @@ func _process(delta: float) -> void:
 	var f := move_frame()
 	var face_dir := _face_dir()
 	cut.paper_turn = tune.paper_turn
-	if cut.disabled.is_empty() != tune.eight_dir:
-		cut.disabled = {} if tune.eight_dir else {&"front_34": true, &"back_34": true}
-	cut.hysteresis = 7.0 if tune.eight_dir else 12.0
 	cut.face(Vector2(face_dir.x, face_dir.z))
 	cut.lean(camera_pitch, card_lean_deg)
 	cut.step(dt)
@@ -471,7 +492,8 @@ func _process(delta: float) -> void:
 	var style: Dictionary = VIEW_STYLE[cut.view]
 	var sideness: float = style.side
 	var side := sideness > 0.5
-	var sx: float = style.sx     # back view: the sword arm is on screen left, its arcs mirror
+	var sx: float = style.sx     # arcs mirror on the card where the drawing does
+	var fx: float = style.fx     # a side view facing right (+1) or left (-1)
 	rig.reset_pose()
 
 	# gait: world feet and body springs, read between physics steps
@@ -489,7 +511,7 @@ func _process(delta: float) -> void:
 	var view := cut.view
 	var torso_deg := float(move.sample(&"torso", f, view)) if move else (6.0 if _charging else 0.0)
 	for p: StringName in rd.lean_parts:
-		rig.pose(p, -lean_world.x * mirror + deg_to_rad(torso_deg) * (sx if not side else 1.0))
+		rig.pose(p, -lean_world.x * mirror + deg_to_rad(torso_deg) * sx)
 
 	# legs: IK to the planted / stepping feet
 	var hips: Vector3 = rd.hips
@@ -500,8 +522,8 @@ func _process(delta: float) -> void:
 		var m := cut.ground_to_card(off)
 		var rest_f: Vector3 = feet[i]
 		targets.append(Vector3(m.x, rest_f.y + m.y, 0.0))
-	rig.solve_limb(&"leg_l_upper", &"leg_l_lower", &"foot_l", targets[0], 1.0 if side else signf((rd.foot_l as Vector3).x - hips.x))
-	rig.solve_limb(&"leg_r_upper", &"leg_r_lower", &"foot_r", targets[1], 1.0 if side else signf((rd.foot_r as Vector3).x - hips.x))
+	rig.solve_limb(&"leg_l_upper", &"leg_l_lower", &"foot_l", targets[0], fx if side else signf((rd.foot_l as Vector3).x - hips.x))
+	rig.solve_limb(&"leg_r_upper", &"leg_r_lower", &"foot_r", targets[1], fx if side else signf((rd.foot_r as Vector3).x - hips.x))
 
 	# sword arm: rest by the side, around the shoulder along the move's arc,
 	# or held back while charging
@@ -520,7 +542,7 @@ func _process(delta: float) -> void:
 	var arc_hand := sh + Vector3(cos(phi) * sx, sin(phi), 0) * (rd.arm_len as float)
 	var hand_rest: Vector3 = rd.hand_r + Vector3(0, bob, 0)
 	var hand_t := hand_rest.lerp(arc_hand, w)
-	var elbow_out := signf((rd.hand_r as Vector3).x - hips.x) if not side else -1.0
+	var elbow_out := signf((rd.hand_r as Vector3).x - hips.x) if not side else -fx
 	rig.solve_limb(&"arm_r_upper", &"arm_r_lower", &"hand_r", hand_t, elbow_out if w < 0.5 else -elbow_out)
 	var blade_rest := atan2(sin(deg_to_rad(-62.0)), cos(deg_to_rad(-62.0)) * sx)    # lowered, tip forward
 	var blade_arc := atan2(sin(phi + blade_off), cos(phi + blade_off) * sx)
@@ -537,7 +559,7 @@ func _process(delta: float) -> void:
 	# other arm: hangs and swings against the legs
 	var swing_x := ((targets[1] as Vector3).x - (rd.foot_r as Vector3).x) * lerpf(0.2, 0.7, sideness)
 	var hl: Vector3 = rd.hand_l + Vector3(swing_x, bob, 0)
-	rig.solve_limb(&"arm_l_upper", &"arm_l_lower", &"hand_l", hl, signf((rd.hand_l as Vector3).x - hips.x) if not side else -1.0)
+	rig.solve_limb(&"arm_l_upper", &"arm_l_lower", &"hand_l", hl, signf((rd.hand_l as Vector3).x - hips.x) if not side else -fx)
 
 	# head: look at the target with lag, eyes lead, blinks keep the hold alive
 	var look_dir := Vector2.ZERO
@@ -549,7 +571,7 @@ func _process(delta: float) -> void:
 	_head_aim.limit_max = deg_to_rad(9.0)
 	_head_aim.target = -look_dir.x * mirror * deg_to_rad(7.0) * (1.0 - sideness) - lean_world.x * mirror * 0.5
 	var head_deg := float(move.sample(&"head", f, view)) if move else 0.0
-	rig.pose(&"head", _head_aim.step(dt) + deg_to_rad(head_deg) * (sx if not side else 1.0))
+	rig.pose(&"head", _head_aim.step(dt) + deg_to_rad(head_deg) * sx)
 	_eyes.target = Vector2(look_dir.x * mirror * lerpf(1.0, 0.6, sideness), -look_dir.y * 0.5) * 0.012
 	var eo := _eyes.step(dt)
 	if rig.has_part(&"eyes"):

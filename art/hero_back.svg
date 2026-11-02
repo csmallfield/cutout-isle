@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 330">
-  <!-- Cutout Isle hero, back three-quarter view (same rig as the front view; the
-       character's right arm is on screen left). Feet rest at (110, 318). -->
-  <g id="hips"><circle id="pivot-hips" cx="110" cy="262" r="2" fill="none"/>
+  <!-- Cutout Isle hero, back view, never mirrored in play: the sword arm (arm_r)
+       is the hero's right, on screen right, and both arms are drawn behind the
+       tunic and head (from behind, the body covers them). The transform on
+       "hips" turns the drawing round. Feet rest at (110, 318). -->
+  <g id="hips" transform="matrix(-1 0 0 1 220 0)"><circle id="pivot-hips" cx="110" cy="262" r="2" fill="none"/>
     <g id="leg_r_upper"><circle id="pivot-leg_r_upper" cx="94" cy="268" r="2" fill="none"/>
       <rect fill="#3a2f45" x="84" y="264" width="20" height="28" rx="7"/>
       <g id="leg_r_lower"><circle id="pivot-leg_r_lower" cx="94" cy="290" r="2" fill="none"/>
@@ -21,6 +23,24 @@
       </g>
     </g>
     <g id="torso"><circle id="pivot-torso" cx="110" cy="262" r="2" fill="none"/>
+      <g id="arm_r_upper" transform="translate(-7, 0)"><circle id="pivot-arm_r_upper" cx="64" cy="206" r="2" fill="none"/>
+        <path fill="#3f8f5c" d="M58 198 C50 208 47 220 49 232 L63 234 C63 224 66 214 73 205 Z"/>
+        <g id="arm_r_lower"><circle id="pivot-arm_r_lower" cx="56" cy="232" r="2" fill="none"/>
+          <rect fill="#3f8f5c" x="49" y="228" width="14" height="24" rx="6"/>
+          <g id="hand_r"><circle id="pivot-hand_r" cx="56" cy="254" r="2" fill="none"/>
+            <circle fill="#f2bf96" cx="56" cy="257" r="9"/>
+          </g>
+        </g>
+      </g>
+      <g id="arm_l_upper" transform="translate(7, 0)"><circle id="pivot-arm_l_upper" cx="156" cy="206" r="2" fill="none"/>
+        <path fill="#3f8f5c" d="M162 198 C170 208 173 220 171 232 L157 234 C157 224 154 214 147 205 Z"/>
+        <g id="arm_l_lower"><circle id="pivot-arm_l_lower" cx="164" cy="232" r="2" fill="none"/>
+          <rect fill="#3f8f5c" x="157" y="228" width="14" height="24" rx="6"/>
+          <g id="hand_l"><circle id="pivot-hand_l" cx="164" cy="254" r="2" fill="none"/>
+            <circle fill="#f2bf96" cx="164" cy="257" r="9"/>
+          </g>
+        </g>
+      </g>
       <path id="tunic" fill="#4fa86c" d="M82 172 L138 172 C152 176 160 190 162 210 L170 280 C150 288 70 288 50 280 L58 210 C60 190 68 176 82 172 Z"/>
       <path id="seam" class="flat" fill="#3f8f5c" d="M107 178 L113 178 L114 238 L106 238 Z"/>
       <rect id="belt" fill="#5b3a26" x="57" y="240" width="106" height="12" rx="3"/>
@@ -34,24 +54,6 @@
           <path id="nape" fill="#8a3f2a" d="M84 172 C88 186 96 192 100 196 C104 192 112 186 116 172 Z"/>
           <path id="tuft" fill="#a14b30" d="M96 22 C92 8 100 -2 116 -4 C108 6 110 14 116 22 C110 22 102 22 96 22 Z"/>
           <g id="eyes"><circle id="pivot-eyes" cx="100" cy="122" r="2" fill="none"/></g>
-        </g>
-      </g>
-      <g id="arm_r_upper"><circle id="pivot-arm_r_upper" cx="64" cy="206" r="2" fill="none"/>
-        <path fill="#3f8f5c" d="M58 198 C50 208 47 220 49 232 L63 234 C63 224 66 214 73 205 Z"/>
-        <g id="arm_r_lower"><circle id="pivot-arm_r_lower" cx="56" cy="232" r="2" fill="none"/>
-          <rect fill="#3f8f5c" x="49" y="228" width="14" height="24" rx="6"/>
-          <g id="hand_r"><circle id="pivot-hand_r" cx="56" cy="254" r="2" fill="none"/>
-            <circle fill="#f2bf96" cx="56" cy="257" r="9"/>
-          </g>
-        </g>
-      </g>
-      <g id="arm_l_upper"><circle id="pivot-arm_l_upper" cx="156" cy="206" r="2" fill="none"/>
-        <path fill="#3f8f5c" d="M162 198 C170 208 173 220 171 232 L157 234 C157 224 154 214 147 205 Z"/>
-        <g id="arm_l_lower"><circle id="pivot-arm_l_lower" cx="164" cy="232" r="2" fill="none"/>
-          <rect fill="#3f8f5c" x="157" y="228" width="14" height="24" rx="6"/>
-          <g id="hand_l"><circle id="pivot-hand_l" cx="164" cy="254" r="2" fill="none"/>
-            <circle fill="#f2bf96" cx="164" cy="257" r="9"/>
-          </g>
         </g>
       </g>
     </g>

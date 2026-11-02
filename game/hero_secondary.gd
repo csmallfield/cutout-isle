@@ -15,18 +15,18 @@ extends Node
 ## far in front of (+) or behind (-) the cards they draw, and the scarf's
 ## rest direction (card plane).
 const SCARF := {
-	&"front": {root = Vector2(126, 192), z = -0.004, dir = Vector3(0.35, -1.0, 0.0)},
+	&"front": {root = Vector2(94, 192), z = -0.004, dir = Vector3(-0.35, -1.0, 0.0)},
 	&"side": {root = Vector2(90, 186), z = -0.004, dir = Vector3(-1.0, -0.5, 0.0)},
-	&"back": {root = Vector2(116, 190), z = 0.22, dir = Vector3(0.2, -1.0, 0.0)},
-	&"front_34": {root = Vector2(92, 188), z = -0.004, dir = Vector3(-0.7, -0.8, 0.0)},
-	&"back_34": {root = Vector2(104, 190), z = 0.22, dir = Vector3(-0.45, -1.0, 0.0)},
+	&"side_left": {root = Vector2(130, 186), z = -0.004, dir = Vector3(1.0, -0.5, 0.0)},
+	&"back": {root = Vector2(104, 190), z = 0.22, dir = Vector3(-0.2, -1.0, 0.0)},
 }
+## The pouch rides the right hip: in front from the front, side and back,
+## behind the body facing left (the far hip).
 const POUCH := {
 	&"front": {root = Vector2(68, 250), z = 0.22},
 	&"side": {root = Vector2(88, 250), z = 0.22},
+	&"side_left": {root = Vector2(132, 250), z = -0.006},
 	&"back": {root = Vector2(152, 250), z = 0.22},
-	&"front_34": {root = Vector2(76, 250), z = 0.22},
-	&"back_34": {root = Vector2(140, 250), z = 0.22},
 }
 
 var hero: Hero
@@ -87,16 +87,18 @@ func on_view(view: StringName, mirrored: bool, first := false) -> void:
 		scarf_a.teleport(_root(sc.root))
 		scarf_b.teleport(_root(sc.root + Vector2(-6, 2)))
 		pouch.teleport(_root(pc.root))
-	elif _mirrored_last != mirrored:
+	elif _mirrored_last != mirrored or (_view_last in [&"side", &"side_left"] and view in [&"side", &"side_left"] and view != _view_last):
 		for c: MotionChain in [scarf_a, scarf_b, pouch]:
-			c.mirror_x()
+			c.mirror_x()             # a flip, or the turn between the right- and left-facing drawings
 	_mirrored_last = mirrored
+	_view_last = view
 	_ribbon_a.position.z = sc.z
 	_ribbon_b.position.z = sc.z - 0.002
 	_cord.position.z = pc.z
 	_pouch_card.position.z = pc.z + 0.002
 
 var _mirrored_last := false
+var _view_last: StringName = &""
 
 
 ## A point given in SVG units of the view showing, riding the torso (lean,
