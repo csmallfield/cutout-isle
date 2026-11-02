@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AKRecipe" format=3]
+
+[ext_resource type="Script" path="res://addons/audio_kit/core/recipe.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+voice = &"mallet"
+seed = 105
+send = 0.3
+params = {"freq_hz": 1250.0, "material": "metal", "hardness": 0.9, "decay_s": 0.5}
+layers = Array[Dictionary]([{"voice": "click", "params": {"freq_hz": 5200.0, "mode": "band", "q": 3.0, "decay_s": 0.01}, "gain_db": -4.0}])
+vary = {"freq_hz": 0.08, "decay_s": 0.2}
+bind = {"intensity": {"gain_db": [-10.0, 0.0]}}

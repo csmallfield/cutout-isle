@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="AKCueMap" format=3]
+
+[ext_resource type="Script" path="res://addons/audio_kit/core/cue_map.gd" id="1"]
+[ext_resource type="Resource" path="res://audio/sfx/swing.tres" id="2"]
+[ext_resource type="Resource" path="res://audio/sfx/swing_charge.tres" id="3"]
+[ext_resource type="Resource" path="res://audio/sfx/hit_wood.tres" id="4"]
+[ext_resource type="Resource" path="res://audio/sfx/hit_flesh.tres" id="5"]
+[ext_resource type="Resource" path="res://audio/sfx/hit_metal.tres" id="6"]
+[ext_resource type="Resource" path="res://audio/sfx/block.tres" id="7"]
+[ext_resource type="Resource" path="res://audio/sfx/charge_full.tres" id="8"]
+[ext_resource type="Resource" path="res://audio/sfx/heart.tres" id="9"]
+[ext_resource type="Resource" path="res://audio/sfx/step_grass.tres" id="10"]
+[ext_resource type="Resource" path="res://audio/sfx/step_stone.tres" id="11"]
+[ext_resource type="Resource" path="res://audio/sfx/step_sand.tres" id="12"]
+[ext_resource type="Resource" path="res://audio/sfx/step_wood.tres" id="13"]
+[ext_resource type="Resource" path="res://audio/sfx/dash.tres" id="14"]
+[ext_resource type="Resource" path="res://audio/sfx/land.tres" id="15"]
+[ext_resource type="Resource" path="res://audio/sfx/pickup.tres" id="16"]
+[ext_resource type="Resource" path="res://audio/sfx/enemy_alert.tres" id="17"]
+[ext_resource type="Resource" path="res://audio/sfx/enemy_ko.tres" id="18"]
+
+[resource]
+script = ExtResource("1")
+sounds = {"swing": ExtResource("2"), "swing.charge": ExtResource("3"), "hit.wood": ExtResource("4"), "hit.flesh": ExtResource("5"), "hit.metal": ExtResource("6"), "block": ExtResource("7"), "charge.full": ExtResource("8"), "heart": ExtResource("9"), "step.grass": ExtResource("10"), "step.stone": ExtResource("11"), "step.sand": ExtResource("12"), "step.wood": ExtResource("13"), "dash": ExtResource("14"), "land": ExtResource("15"), "pickup": ExtResource("16"), "enemy.alert": ExtResource("17"), "enemy.ko": ExtResource("18")}
+reverb = {"room": 0.35, "damp": 0.6, "width": 1.0, "quality": "small", "return_db": -4.0}
+duck = {"depth_db": 7.0, "full_at_db": -18.0, "release_s": 0.3}

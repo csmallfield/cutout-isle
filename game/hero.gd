@@ -33,6 +33,11 @@ const ORIGIN := Vector2(110, 318)     # the feet, in SVG units
 ## Seconds of holding to charge, and how fast the hero walks while charging.
 @export var charge_time := 0.55
 @export var charge_speed_scale := 0.35
+## Dash: speed, how long it lasts, and the wait before the next one.
+@export var dash_speed := 11.0
+@export var dash_time := 0.16
+@export var dash_cooldown := 0.45
+@export var max_hp := 5
 ## The walk: stride, step time, lift, body dip and lean.
 @export var gait_settings: MotionGaitSettings = preload("res://game/hero_gait.tres")
 
@@ -41,6 +46,8 @@ var look: Look
 var camera_pitch := 50.0
 var aim := Vector3(1, 0, 0)       # last move direction, for the hitbox and facing
 var look_target: Node3D
+var island: Node                  # for the ground surface under the feet
+var hp := 5
 
 var cut: MotionCutout
 var gait: MotionGait
@@ -59,6 +66,7 @@ var _queued := false              # the next combo hit is buffered
 var _charging := false
 var _charge_t := 0.0
 var _smear_key := ""              # which move / view the smear mesh was built for
+var _dash_dir := Vector3.ZERO
 
 
 func setup(p_look: Look, world: MotionClock, pitch_deg: float) -> void:
@@ -205,6 +213,10 @@ func _physics_process(delta: float) -> void:
 	var v := _move.step(d)
 	if input.length() > 0.2:
 		aim = Vector3(input.x, 0.0, input.y).normalized()
+	if clock.since(&"dash") < dash_time:
+		var u := clock.since(&"dash") / dash_time
+		v = _dash_dir * dash_speed * (1.0 - u * u * 0.6)      # a burst that eases off at the end
+		_move.value = v
 	velocity = v * r                          # frozen in place while stopped
 	if r > 0.0:
 		move_and_slide()
@@ -234,12 +246,29 @@ func move_frame() -> float:
 
 func _on_planted(_foot: int, pos: Vector3) -> void:
 	var spd := Vector2(velocity.x, velocity.z).length() / speed
-	GameEvents.emit(&"step.grass", pos, clampf(0.35 + spd * 0.65, 0.0, 1.0), {source = self})
+	var surface: StringName = island.surface_at(pos) if island and island.has_method(&"surface_at") else &"grass"
+	GameEvents.emit(StringName("step." + String(surface)), pos, clampf(0.35 + spd * 0.65, 0.0, 1.0), {source = self, surface = surface})
+
+
+## 0..1 while charging (the riser's pitch and level follow it).
+func charge_ratio() -> float:
+	return clampf(_charge_t / charge_time, 0.0, 1.0) if _charging else 0.0
+
+
+## Lose `n` hit points (enemies arrive in phase 6; F5 / F6 in the overlay test it).
+func damage(n := 1) -> void:
+	hp = clampi(hp - n, 0, max_hp)
+
+
+func heal(n := 1) -> void:
+	hp = clampi(hp + n, 0, max_hp)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"attack"):
 		attack()
+	elif event.is_action_pressed(&"dash"):
+		dash()
 	elif event.is_action_released(&"attack") and _charging:
 		_release_charge()
 
@@ -250,6 +279,25 @@ func _release_charge() -> void:
 	if _charge_t >= charge_time:
 		_start(charge_move, -1, charge_move.marker(&"hold", 0.0))
 	_charge_t = 0.0
+
+
+## A short burst along the stick (or the facing). Cancels a swing after its
+## active frames, not during them.
+func dash() -> void:
+	if clock.since(&"dash") < dash_cooldown:
+		return
+	var m := current_move()
+	if m and move_frame() < m.marker(&"active_to", 0.0):
+		return
+	var input := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
+	_dash_dir = Vector3(input.x, 0, input.y).normalized() if input.length() > 0.2 else _face_dir()
+	aim = _dash_dir
+	if m:
+		clock.mark(&"swing", {})                  # end the move
+	_charging = false
+	clock.mark(&"dash", {dir = _dash_dir})
+	secondary.squash.impulse(3.0)
+	GameEvents.emit(&"dash", global_position, 1.0, {source = self})
 
 
 ## Attack pressed: start the combo, or buffer its next hit.
@@ -267,7 +315,7 @@ func _start(move: MotionPoseCurve, step: int, start := 0.0) -> void:
 	_queued = false
 	_hit_this_swing.clear()
 	clock.mark(&"swing", {aim = aim, move = move, step = step, start = start})
-	GameEvents.emit(&"swing", global_position, float(move.data.get("intensity", 1.0)), {source = self, step = step})
+	GameEvents.emit(&"swing.charge" if step < 0 else &"swing", global_position, float(move.data.get("intensity", 1.0)), {source = self, step = step})
 
 
 ## Combo chaining and charging, once per rendered frame.

@@ -5,7 +5,23 @@
 class_name Island
 extends Node3D
 
+## Ground surfaces for footsteps: [Rect2 on x, z, surface name], first match
+## wins; everything else is grass.
+const SURFACES := [
+	[Rect2(3.0, -2.2, 4.2, 3.6), &"wood"],
+	[Rect2(-7.3, 2.15, 10.6, 0.95), &"stone"],
+	[Rect2(-8.0, 3.4, 4.2, 2.6), &"sand"],
+]
+
 var look: Look
+
+
+## The surface at a world position (for footsteps).
+func surface_at(p: Vector3) -> StringName:
+	for s in SURFACES:
+		if (s[0] as Rect2).has_point(Vector2(p.x, p.z)):
+			return s[1]
+	return &"grass"
 
 
 func setup(p_look: Look) -> void:
@@ -26,6 +42,18 @@ func _build() -> void:
 	# the island's edge: invisible walls so the hero stays on top
 	for r in [Rect2(-8.5, -7.5, 17, 0.5), Rect2(-8.5, 6, 17, 0.5), Rect2(-8.5, -7.5, 0.5, 14), Rect2(8, -7.5, 0.5, 14)]:
 		_wall(Vector3(r.position.x, -1, r.position.y), Vector3(r.size.x, 3, r.size.y), true)
+
+	# ground surfaces: flush with the grass (a few millimetres proud), no collision
+	var dk := Color("#a9773f")
+	for i in 9:                                       # a wooden deck of planks
+		var z := -2.2 + i * 0.4
+		MotionFlat3D.box(props, Vector3(3.0, -0.04, z + 0.02), Vector3(4.2, 0.046, 0.36), Vector2.ZERO, dk if i % 2 == 0 else dk.lightened(0.08), edges)
+	for i in 14:                                      # a stepping-stone path
+		var x := -7.2 + i * 0.75 + MK.rand(i * 1.7) * 0.12
+		var z := 2.25 + MK.rand(i * 3.1) * 0.15
+		var w := 0.55 + MK.rand(i * 5.3) * 0.12
+		MotionFlat3D.box(props, Vector3(x, -0.04, z), Vector3(w, 0.046, 0.62), Vector2.ZERO, Look.STONE.darkened(MK.rand(i * 7.7) * 0.12), edges)
+	MotionFlat3D.box(props, Vector3(-8.0, -0.04, 3.4), Vector3(4.2, 0.044, 2.6), Vector2.ZERO, Color("#ecd9a0"), edges)   # sand
 
 	# rocks
 	for p in [Vector3(-5.5, 0, -4.5), Vector3(-6.2, 0, -3.6), Vector3(5.2, 0, 3.4), Vector3(3.0, -0.4, 7.4)]:

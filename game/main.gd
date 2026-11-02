@@ -46,13 +46,16 @@ func _ready() -> void:
 	add_child(juice)
 	juice.setup(world, rig, look)
 
+	hero.island = island
 	var sound := Sound.new()
 	sound.name = "Sound"
+	sound.hero = hero
 	add_child(sound)
 
 	var overlay := preload("res://game/debug_overlay.gd").new()
 	overlay.name = "Overlay"
 	overlay.native_ok = sound.ok
+	overlay.hero = hero
 	add_child(overlay)
 
 	var args := OS.get_cmdline_user_args()

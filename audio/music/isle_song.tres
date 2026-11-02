@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="AKSong" format=3]
+
+[ext_resource type="Script" path="res://addons/audio_kit/sequencer/song.gd" id="1"]
+[ext_resource type="Resource" path="res://audio/music/tempo.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+sections = Array[Dictionary]([{"name": "explore", "bars": 4, "patterns": ["res://audio/music/explore.tres"]}, {"name": "combat", "bars": 4, "patterns": ["res://audio/music/combat.tres"]}])
+gain_db = -6.0
+tempo = ExtResource("2")

@@ -12,6 +12,7 @@ var _scales := [1.0, 0.5, 0.25]
 var _si := 0
 var _since_start := 0.0
 var native_ok := false
+var hero: Node
 
 const KEYS := {
 	KEY_1: "hitstop", KEY_2: "shake", KEY_3: "kick", KEY_4: "wobble", KEY_5: "squash",
@@ -49,6 +50,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			tune.per_entity = not tune.per_entity
 		KEY_R:
 			PerfProbe.reset_worst()
+		KEY_F5:
+			if hero: hero.damage(1)
+		KEY_F6:
+			if hero: hero.heal(1)
 		_:
 			if KEYS.has(k.keycode):
 				var prop: String = KEYS[k.keycode]
@@ -88,5 +93,6 @@ func _process(delta: float) -> void:
 		var prop: String = KEYS[key]
 		sw.append("%s %s%s" % [OS.get_keycode_string(key), prop, "" if tune.get(prop) else " OFF"])
 	lines.append("  ".join(sw))
-	lines.append("F1 overlay  F2 time scale  F3 hit-stop scope  R reset worst   move WASD / stick, attack J / Space / pad X")
+	lines.append("hp %s   F5 / F6 hurt / heal (low-health sound)" % (str(hero.hp) if hero else "-"))
+	lines.append("F1 overlay  F2 time scale  F3 hit-stop scope  R reset worst   move WASD / stick, attack J / Space / pad X (hold to charge), dash K / Shift / pad A")
 	_label.text = "\n".join(lines)

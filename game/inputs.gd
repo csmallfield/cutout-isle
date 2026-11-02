@@ -1,6 +1,6 @@
 # Input actions, registered in code so the project file stays readable.
-# Keyboard (WASD / arrows, J or Space to attack) and gamepad (left stick,
-# X / Square to attack).
+# Keyboard (WASD / arrows, J or Space to attack, K or Shift to dash) and
+# gamepad (left stick, X / Square to attack, A / Cross to dash).
 class_name Inputs
 extends RefCounted
 
@@ -11,6 +11,7 @@ static func ensure() -> void:
 	_action(&"move_up", [_key(KEY_W), _key(KEY_UP), _axis(JOY_AXIS_LEFT_Y, -1.0)])
 	_action(&"move_down", [_key(KEY_S), _key(KEY_DOWN), _axis(JOY_AXIS_LEFT_Y, 1.0)])
 	_action(&"attack", [_key(KEY_J), _key(KEY_SPACE), _button(JOY_BUTTON_X)])
+	_action(&"dash", [_key(KEY_K), _key(KEY_SHIFT), _button(JOY_BUTTON_A)])
 
 
 static func _action(name: StringName, events: Array) -> void:

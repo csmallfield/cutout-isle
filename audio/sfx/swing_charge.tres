@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AKRecipe" format=3]
+
+[ext_resource type="Script" path="res://addons/audio_kit/core/recipe.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+voice = &"whoosh"
+seed = 102
+send = 0.2
+gain_db = -3.0
+params = {"length_s": 0.42, "low_hz": 160.0, "high_hz": 2200.0, "peak": 0.45, "shape": 1.8, "mode": "band", "q": 1.1, "noise": "pink"}
+layers = Array[Dictionary]([{"voice": "boing", "params": {"start_hz": 140.0, "end_hz": 50.0, "drop_s": 0.12, "decay_s": 0.25, "sub": 0.7, "click": 0.1}, "gain_db": -8.0, "offset_s": 0.12}])
+vary = {"length_s": 0.1, "high_hz": 0.15}

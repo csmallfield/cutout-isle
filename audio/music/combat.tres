@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="AKPattern" format=3]
+
+[ext_resource type="Script" path="res://addons/audio_kit/sequencer/pattern.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+steps = 64
+seed = 12
+swing = 0.54
+lanes = Array[Dictionary]([{"name": "pluck", "recipe": "res://audio/music/pluck.tres", "steps": "x.o.x.o.x.o.xo.ox.o.x.o.x.o.xo.ox.o.x.o.x.o.xo.ox.o.x.o.x.o.xo.o", "notes": [62, 69, 65, 72, 69, 65, 72, 81, 62, 69, 65, 72, 69, 65, 72, 81, 67, 74, 71, 79, 74, 71, 79, 86, 67, 74, 71, 79, 74, 71, 79, 86, 65, 72, 69, 76, 72, 69, 76, 84, 65, 72, 69, 76, 72, 69, 76, 84, 60, 67, 64, 72, 67, 64, 72, 79, 60, 67, 64, 72, 67, 64, 72, 79], "gain_db": -9.0, "pan": -0.15}, {"name": "pad", "recipe": "res://audio/music/pad.tres", "steps": "x...............", "notes": [50, 55, 53, 48], "chord": [0, 7, 12, 15], "gate": 15.5, "gain_db": -11.0}, {"name": "shaker", "recipe": "res://audio/music/shaker.tres", "steps": ".o.x.o.x.o.x.oox", "length": 16, "gain_db": -17.0, "pan": 0.25}, {"name": "bass", "recipe": "res://audio/music/bass.tres", "steps": "x.xxx.x.x.xxx.x.x.xxx.x.x.xxx.x.x.xxx.x.x.xxx.x.x.xxx.x.x.xxx.x.", "notes": [38, 38, 45, 38, 50, 38, 45, 48, 43, 43, 50, 43, 55, 43, 50, 53, 41, 41, 48, 41, 53, 41, 48, 51, 36, 36, 43, 36, 48, 36, 43, 46], "gate": 0.8, "gain_db": -4.0}, {"name": "kick", "recipe": "res://audio/music/kick.tres", "steps": "X...x.....X.x...", "length": 16, "gain_db": -3.0}, {"name": "clap", "recipe": "res://audio/music/clap.tres", "steps": "....X.......X...", "length": 16, "gain_db": -8.0}])

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="AKRecipe" format=3]
+
+[ext_resource type="Script" path="res://addons/audio_kit/core/recipe.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+voice = &"wavetable"
+seed = 203
+params = {"position": 0.5, "sub": 0.35, "cutoff_hz": 420.0, "env_octaves": 1.6, "filter_decay_s": 0.15, "q": 1.1, "attack_s": 0.004, "decay_s": 0.16, "sustain": 0.35, "release_s": 0.06}
+bind = {"intensity": {"gain_db": [-8.0, 0.0]}}

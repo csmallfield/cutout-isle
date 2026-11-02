@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AKRecipe" format=3]
+
+[ext_resource type="Script" path="res://addons/audio_kit/core/recipe.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+voice = &"whoosh"
+seed = 115
+send = 0.1
+gain_db = -4.0
+params = {"length_s": 0.22, "low_hz": 600.0, "high_hz": 4200.0, "peak": 0.25, "shape": 2.5, "mode": "band", "q": 1.0, "noise": "white"}
+vary = {"length_s": 0.15, "high_hz": 0.2}
