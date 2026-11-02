@@ -18,11 +18,15 @@ const SCARF := {
 	&"front": {root = Vector2(126, 192), z = -0.004, dir = Vector3(0.35, -1.0, 0.0)},
 	&"side": {root = Vector2(90, 186), z = -0.004, dir = Vector3(-1.0, -0.5, 0.0)},
 	&"back": {root = Vector2(116, 190), z = 0.22, dir = Vector3(0.2, -1.0, 0.0)},
+	&"front_34": {root = Vector2(92, 188), z = -0.004, dir = Vector3(-0.7, -0.8, 0.0)},
+	&"back_34": {root = Vector2(104, 190), z = 0.22, dir = Vector3(-0.45, -1.0, 0.0)},
 }
 const POUCH := {
 	&"front": {root = Vector2(68, 250), z = 0.22},
 	&"side": {root = Vector2(88, 250), z = 0.22},
 	&"back": {root = Vector2(152, 250), z = 0.22},
+	&"front_34": {root = Vector2(76, 250), z = 0.22},
+	&"back_34": {root = Vector2(140, 250), z = 0.22},
 }
 
 var hero: Hero

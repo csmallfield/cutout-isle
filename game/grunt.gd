@@ -1,4 +1,4 @@
-# The sword grunt: the hero's cutout rig (front, back and side views) in a
+# The sword grunt: the hero's cutout rig (all five views, 8 directions) in a
 # darker tint, walking on a MotionGait, attacking with the hero's first
 # swing after a held windup that telegraphs it (the blade glows), staggering
 # back when hit, falling flat on a KO. A slimmer pose than the hero's: no
@@ -26,8 +26,10 @@ func _build_visual() -> void:
 	cut = MotionCutout.new()
 	cut.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_child(cut)
+	var mat := look.flat.actor()       # one material for every part and view (no instance uniforms)
+	cut.hysteresis = 7.0
 	for v: StringName in Hero.VIEWS:
-		var rig := MotionCutoutRig.build(MotionSvgData.load_any(Hero.VIEWS[v]), Hero.WIDTH * 0.95, look.cutout, look.card_edges, {origin = Hero.ORIGIN})
+		var rig := MotionCutoutRig.build(MotionSvgData.load_any(Hero.VIEWS[v]), Hero.WIDTH * 0.95, mat, look.card_edges, {origin = Hero.ORIGIN})
 		rig.set_tint(TINT)
 		cut.add_view(v, rig)
 		_rest[v] = {
@@ -102,8 +104,9 @@ func _pose(dt: float) -> void:
 	cut.step(dt)
 	var rig := cut.rig
 	var rd: Dictionary = _rest[cut.view]
-	var side := cut.view == &"side"
-	var sx := -1.0 if cut.view == &"back" else 1.0
+	var style: Dictionary = Hero.VIEW_STYLE[cut.view]
+	var side: bool = style.side > 0.5
+	var sx: float = style.sx
 	rig.reset_pose()
 	var frac := Engine.get_physics_interpolation_fraction()
 	var body := get_global_transform_interpolated().origin

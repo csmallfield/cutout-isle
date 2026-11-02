@@ -1,23 +1,23 @@
-# Debug still: the three hero views side by side, big, straight on.
+# Debug still: the hero views side by side (front, front 3/4, side, back 3/4, back), big, straight on.
 #   godot --path . --write-movie out/rig/f.png --fixed-fps 30 --quit-after 2 res://tools/debug/rig_still.tscn
 extends Node3D
 
 
 func _ready() -> void:
 	var look := Look.new(self)
-	var x := -1.0
-	for v in [&"front", &"side", &"back"]:
+	var x := -1.6
+	for v in [&"front", &"front_34", &"side", &"back_34", &"back"]:
 		var rig := MotionCutoutRig.build(MotionSvgData.load_any(Hero.VIEWS[v]), Hero.WIDTH, look.cutout, look.card_edges, {origin = Hero.ORIGIN})
 		add_child(rig)
 		rig.position = Vector3(x, 0, 0)
-		x += 1.0
-	for pair in [["res://art/pouch.svg", 0.3, Vector3(1.55, 0.9, 0)], ["res://art/tag.svg", 0.4, Vector3(1.55, 0.4, 0)], ["res://art/sword.svg", 0.12, Vector3(-1.6, 0.3, 0)]]:
+		x += 0.8
+	for pair in [["res://art/pouch.svg", 0.3, Vector3(2.25, 0.9, 0)], ["res://art/tag.svg", 0.4, Vector3(2.25, 0.4, 0)], ["res://art/sword.svg", 0.12, Vector3(-2.2, 0.3, 0)]]:
 		var c := MotionCutoutRig.card(MotionSvgData.load_any(pair[0]), pair[1], look.cutout, look.card_edges, Vector2(0.5, 0.5))
 		c.position = pair[2]
 		add_child(c)
 	var cam := Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = 1.6
+	cam.size = 1.4
 	cam.position = Vector3(0, 0.6, 5)
 	add_child(cam)
 	var env := WorldEnvironment.new()

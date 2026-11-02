@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 330">
+  <!-- Cutout Isle hero, back three-quarter view facing screen right and away
+       (mirrored for left): between the back and side views. The far (left) arm
+       and leg are a shade darker; a sliver of cheek and the near ear show past
+       the hair. Feet rest at (110, 318). -->
+  <g id="hips"><circle id="pivot-hips" cx="110" cy="262" r="2" fill="none"/>
+    <g id="leg_l_upper"><circle id="pivot-leg_l_upper" cx="117" cy="268" r="2" fill="none"/>
+      <rect fill="#2e2538" x="107" y="264" width="20" height="28" rx="7"/>
+      <g id="leg_l_lower"><circle id="pivot-leg_l_lower" cx="117" cy="290" r="2" fill="none"/>
+        <rect fill="#2e2538" x="108" y="286" width="18" height="22" rx="6"/>
+        <g id="foot_l"><circle id="pivot-foot_l" cx="117" cy="306" r="2" fill="none"/>
+          <path fill="#4a2f1f" d="M107 302 L126 302 C132 304 135 310 135 318 L107 318 Z"/>
+        </g>
+      </g>
+    </g>
+    <g id="leg_r_upper"><circle id="pivot-leg_r_upper" cx="102" cy="268" r="2" fill="none"/>
+      <rect fill="#3a2f45" x="92" y="264" width="20" height="28" rx="7"/>
+      <g id="leg_r_lower"><circle id="pivot-leg_r_lower" cx="102" cy="290" r="2" fill="none"/>
+        <rect fill="#3a2f45" x="93" y="286" width="18" height="22" rx="6"/>
+        <g id="foot_r"><circle id="pivot-foot_r" cx="102" cy="306" r="2" fill="none"/>
+          <path fill="#5b3a26" d="M91 302 L111 302 C118 304 122 310 122 318 L91 318 Z"/>
+        </g>
+      </g>
+    </g>
+    <g id="torso"><circle id="pivot-torso" cx="110" cy="262" r="2" fill="none"/>
+      <g id="arm_l_upper"><circle id="pivot-arm_l_upper" cx="144" cy="206" r="2" fill="none"/>
+        <path fill="#367a4f" d="M150 198 C158 208 161 220 159 232 L145 234 C145 224 142 214 135 205 Z"/>
+        <g id="arm_l_lower"><circle id="pivot-arm_l_lower" cx="152" cy="232" r="2" fill="none"/>
+          <rect fill="#367a4f" x="145" y="228" width="14" height="24" rx="6"/>
+          <g id="hand_l"><circle id="pivot-hand_l" cx="152" cy="254" r="2" fill="none"/>
+            <circle fill="#e2ad85" cx="152" cy="257" r="8.5"/>
+          </g>
+        </g>
+      </g>
+      <path id="tunic" fill="#4fa86c" d="M84 172 L132 172 C145 176 151 190 153 210 L160 280 C142 288 74 288 57 280 L63 210 C65 190 72 176 84 172 Z"/>
+      <path id="seam" class="flat" fill="#3f8f5c" d="M97 178 L103 178 L104 238 L96 238 Z"/>
+      <rect id="belt" fill="#5b3a26" x="62" y="240" width="95" height="12" rx="3"/>
+      <path id="scarf" fill="#d8433b" d="M76 178 C90 188 124 188 138 178 L140 190 C124 202 90 202 74 190 Z"/>
+      <g id="head"><circle id="pivot-head" cx="110" cy="182" r="2" fill="none"/>
+        <g transform="translate(10, 4)">
+          <ellipse id="face" fill="#f7cfa6" cx="152" cy="122" rx="34" ry="48"/>
+          <circle id="ear_l" fill="#f2bf96" cx="168" cy="124" r="12"/>
+          <path id="hair_back" fill="#8a3f2a" transform="translate(-8, 0)" d="M100 16 C152 16 186 50 184 104 C183 140 166 166 140 176 C120 182 80 182 60 176 C34 166 17 140 16 104 C14 50 48 16 100 16 Z"/>
+          <path id="hair_shade" class="flat" fill="#7a3624" transform="translate(-12, 0)" d="M60 150 C76 160 124 160 140 150 C134 166 66 166 60 150 Z"/>
+          <path id="nape" fill="#8a3f2a" transform="translate(-14, 0)" d="M84 172 C88 186 96 192 100 196 C104 192 112 186 116 172 Z"/>
+          <path id="tuft" fill="#a14b30" transform="translate(-6, 0)" d="M96 22 C92 8 100 -2 116 -4 C108 6 110 14 116 22 C110 22 102 22 96 22 Z"/>
+          <g id="eyes"><circle id="pivot-eyes" cx="100" cy="122" r="2" fill="none"/></g>
+        </g>
+      </g>
+      <g id="arm_r_upper"><circle id="pivot-arm_r_upper" cx="78" cy="206" r="2" fill="none"/>
+        <path fill="#3f8f5c" d="M74 198 C66 208 63 220 65 232 L79 234 C79 224 82 214 89 205 Z"/>
+        <g id="arm_r_lower"><circle id="pivot-arm_r_lower" cx="72" cy="232" r="2" fill="none"/>
+          <rect fill="#3f8f5c" x="65" y="228" width="14" height="24" rx="6"/>
+          <g id="hand_r"><circle id="pivot-hand_r" cx="72" cy="254" r="2" fill="none"/>
+            <circle fill="#f2bf96" cx="72" cy="257" r="9"/>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

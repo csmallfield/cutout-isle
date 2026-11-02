@@ -17,7 +17,7 @@ var hero: Node
 const KEYS := {
 	KEY_1: "hitstop", KEY_2: "shake", KEY_3: "kick", KEY_4: "wobble", KEY_5: "squash",
 	KEY_6: "flash", KEY_7: "rings", KEY_8: "sound", KEY_9: "bob", KEY_0: "paper_turn", KEY_MINUS: "smear",
-	KEY_C: "chains", KEY_H: "chain_flow", KEY_Q: "hero_squash",
+	KEY_C: "chains", KEY_H: "chain_flow", KEY_Q: "hero_squash", KEY_V: "eight_dir",
 }
 
 
@@ -33,7 +33,8 @@ func _ready() -> void:
 	_label.add_theme_constant_override(&"shadow_offset_x", 1)
 	_label.add_theme_constant_override(&"shadow_offset_y", 1)
 	add_child(_label)
-	visible = not OS.get_cmdline_user_args().has("--autoplay")     # clean captures
+	var args := OS.get_cmdline_user_args()
+	visible = not (args.has("--autoplay") or args.has("--turntable"))     # clean captures
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -89,7 +90,7 @@ func _process(delta: float) -> void:
 		lines.append("  %-12s %6.0f us avg  %6.0f max" % [n, v.x, v.y])
 	lines.append("  %-12s %6.0f us avg (script, budget 2000)" % ["total", total])
 	var sw := PackedStringArray()
-	var order := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_C, KEY_H, KEY_Q]
+	var order := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_C, KEY_H, KEY_Q, KEY_V]
 	for key in order:
 		var prop: String = KEYS[key]
 		sw.append("%s %s%s" % [OS.get_keycode_string(key), prop, "" if tune.get(prop) else " OFF"])

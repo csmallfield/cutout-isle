@@ -115,6 +115,26 @@ posing. Sound pools take about 1.1 s to render at load.
    MotionWarmup draws every material once at load, and Forward+ ubershaders should cover the rest.
 5. Compare F3 (per-entity against global hit-stop) and H (chains through hit-stop) by feel.
 
+## 8 directions (branch exp/8-dir)
+
+The hero and grunts face 8 ways: two new drawings, front 3/4 and back 3/4, sit between the
+front, side and back views, and mirroring covers the left (five drawings, eight directions).
+MotionCutout now picks views by facing angle, and a turn between neighbours 45 degrees
+apart narrows the card halfway instead of flipping it edge-on. The 3/4 views use the side
+view's move arcs (no per-view keys yet), and V toggles 4 against 8 in play.
+
+`tools/debug/turntable.gd` walks the hero in each direction and swings. The capture
+`eight_dir_compare.mp4` shows 4 and 8 side by side.
+
+Building it surfaced a real scaling limit. Each rig part had its own instance uniforms
+(flash, tint, opacity), and each such mesh holds a block of a global shader buffer. Under
+the Compatibility renderer that buffer fits about 290 meshes on Mesa (Forward+ has far more
+room). Five views for the hero and two grunts went over it, and some views rendered black.
+Characters now use one actor material each, with plain uniforms shared by all their parts
+and views. That takes the count from 307 such meshes to 15 and lifts the limit for any
+number of views. Script cost is unchanged (1.24 ms total on the bench), because only the
+showing view is posed.
+
 ## Open items
 
 - **One object leaks at exit since phase 7.** It happens on most headless runs, only at shutdown,

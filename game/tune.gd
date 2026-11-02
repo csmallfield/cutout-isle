@@ -17,6 +17,8 @@ var rings := true
 var sound := true
 var bob := true
 var paper_turn := true
+## The hero shows 8 directions (front and back 3/4 views); off = 4.
+var eight_dir := true
 var smear := true
 var chains := true
 ## Chains keep moving through a hit-stop (on real time) instead of freezing.
