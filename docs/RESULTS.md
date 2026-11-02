@@ -20,6 +20,7 @@ rates or GPU costs.** They are CPU script costs, and the frame rate needs Chris'
 | 5 | Sound sheet, ground surfaces, live voices, music driven by game state, dash |
 | 6 | The island chunk, a cave with a lens blend, blobs and grunts, the HUD |
 | 7 | Consolidation: kit helpers, kit example scene, skill sections, this note |
+| 9 | Per-move part depth (the far sword arm swings in front), depth without screen parallax, stress mode |
 | 8 | Four directions with the sword in one hand: right-handed front and back, a partial mirror for the left, back-view arms behind the body, one material per character |
 
 ## The five goals
@@ -151,6 +152,30 @@ unchanged (1.34 ms total on the bench).
 **Tradeoff to judge.** Facing left, the swing starts behind the body, so the wind-up reads
 weaker than facing right. That is the physically correct look. If it reads too weak, the
 alternative is to bring the sword arm in front during the active frames only.
+
+## Stress test (phase 9)
+
+`--stress=N` adds N unkillable grunts round the hero. Each grunt is a full puppet: four
+views, gait, IK, moves and the state machine. The hero can't lose either, so the fight never
+stops. These numbers are headless, with every actor posed, on the cloud's 2 shared 2.1 GHz
+Xeon cores:
+
+| Extra grunts | enemies (brain + pose) | total GDScript |
+|---|---|---|
+| 0 (7 enemies) | 0.51 ms | 1.31 ms |
+| 10 | 2.24 ms | 3.19 ms |
+| 20 | 4.26 ms | 5.35 ms |
+| 40 | 8.88 ms | 10.08 ms |
+
+Each grunt costs about 0.2 ms here: roughly 60 µs of brain (state machine, steering,
+`move_and_slide`) and 100 µs of posing. The cost grows slightly faster than linear because
+separation compares every enemy with every other.
+
+Draw calls, counted under the Compatibility renderer, rise from 118 to 763 with 20 grunts on
+screen. That is about 32 per puppet: one fill and one outline mesh for each of roughly 15
+parts. The cloud's engine-side numbers (process and physics time) were too noisy to use, and
+Jolt against Godot Physics didn't separate from that noise. Measure both on the 3080 with
+`--bench --stress=N`.
 
 ## Open items
 

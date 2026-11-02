@@ -97,8 +97,13 @@ func _ready() -> void:
 				add_child(d)
 				d.setup(look, world)
 				d.position = Vector3(-6.0 + (i % 5) * 2.6, 0, -3.0 + (i / 5) * 2.4 + (5.5 if i >= 5 else 0.0))
+		elif a.begins_with("--stress="):   # N more grunts round the hero, unkillable, all fighting
+			_stress(int(a.get_slice("=", 1)), hero)
+		elif a.begins_with("--bench-time="):
+			_bench_time = float(a.get_slice("=", 1))
 	if args.has("--bench"):
-		get_tree().create_timer(20.0, true, false, true).timeout.connect(_bench_report)
+		_benching = true
+		get_tree().create_timer(_bench_time, true, false, true).timeout.connect(_bench_report)
 	if args.has("--autoplay") or args.has("--bench"):
 		var auto := preload("res://game/autoplay.gd").new()
 		auto.name = "Autoplay"
@@ -110,6 +115,34 @@ func _process(delta: float) -> void:
 	world.tick(delta)
 	look.flat.apply()
 	MotionPerfProbe.end(&"world", t)
+	if _benching and Engine.get_process_frames() > 60:     # past loading
+		_samples.process.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+		_samples.physics.append(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
+		_samples.draws.append(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME))
+		_samples.objects.append(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME))
+
+
+var _benching := false
+var _bench_time := 20.0
+var _samples := {process = [], physics = [], draws = [], objects = []}
+
+
+## Stress: `n` more grunts in rings round the hero, each with its full rig
+## (four views, gait, IK, moves), too tough to fall, so they keep
+## approaching, attacking and staggering. The hero can't lose either.
+func _stress(n: int, hero: Hero) -> void:
+	hero.god = true
+	for i in n:
+		var ring := 1 + i / 12
+		var ang := TAU * float(i % 12) / 12.0 + ring * 0.4
+		var at := hero.position + Vector3(cos(ang), 0, sin(ang)) * (2.5 + ring * 1.6)
+		var g := Grunt.new()
+		add_child(g)
+		g.setup(look, world, hero, at)
+		g.max_hp = 1e9
+		g.hp = 1e9
+		g.notice_range = 30.0
+		g.lose_range = 60.0
 
 
 ## A trigger that moves the hero through a transition (the cave mouth and
@@ -147,10 +180,29 @@ func _travel(hero: Hero, rig: CameraRig, to: Vector3, into_cave: bool) -> void:
 func _bench_report() -> void:
 	var st := MotionPerfProbe.stats()
 	var total := 0.0
-	print("BENCH (CPU script cost only; cloud: software GL on shared cores)")
+	var headless := DisplayServer.get_name() == "headless"
+	print("BENCH %s, %d enemies, %.0f s (script cost per system over the last 2 s)" % [
+		"headless (nothing drawn, every actor posed)" if headless else RenderingServer.get_video_adapter_name(),
+		get_tree().get_nodes_in_group(&"enemies").size(), _bench_time])
 	for n in st:
 		var v: Vector2 = st[n]
 		total += v.x
 		print("  %-12s avg %6.1f us   max %6.1f us" % [n, v.x, v.y])
 	print("  total        avg %6.1f us" % total)
+	# whole-frame CPU from the engine's own monitors (script, physics, engine work)
+	for k in ["process", "physics"]:
+		var a: Array = _samples[k]
+		a.sort()
+		if a.size() > 0:
+			print("  %-12s avg %6.2f ms   p99 %6.2f ms   max %6.2f ms" % [k + " (cpu)", _mean(a), a[int(a.size() * 0.99)], a[-1]])
+	if not headless:
+		print("  draw calls   avg %6.0f        objects avg %6.0f" % [_mean(_samples.draws), _mean(_samples.objects)])
+	print("  nodes        %d" % get_tree().get_node_count())
 	get_tree().quit()
+
+
+static func _mean(a: Array) -> float:
+	var s := 0.0
+	for v in a:
+		s += float(v)
+	return s / maxf(a.size(), 1.0)

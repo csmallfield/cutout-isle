@@ -56,7 +56,12 @@ fallbacks, with no voices or music.
 - `docs/`: results.
 - `tools/`: setup scripts, the sound sheet, debug tools (rig still, rig bench, event counter,
   turntable, instance-uniform counter, knockback probe).
+- `moves/`: also carry `arm_depth` (per view, e.g. `arm_depth.side_left`): +1 brings the sword
+  arm in front of the body, -1 behind it.
 
 Run `godot --path . -- --autoplay` for scripted input, or
 `godot --headless --path . --fixed-fps 60 -- --bench --actors=10` for a 20 s CPU script-cost
 report with ten extra dummies. Headless numbers are script cost only, never frame rate.
+`-- --stress=20` adds twenty unkillable grunts round the hero (the hero can't lose either);
+with `--bench` (and `--bench-time=S`) it prints script cost per system, the engine's process
+and physics CPU time, and draw calls when something is drawn.

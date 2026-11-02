@@ -87,10 +87,14 @@ var _rest := {}                   # view -> cached rest data
 var _queued := false              # the next combo hit is buffered
 var _charging := false
 var _charge_t := 0.0
-var _smear_key := ""              # which move / view the smear mesh was built for
+var _smear_key := ""
+var _smear_z := 0.0                # the smear's depth at rest in this view
+var _smear_front_z := 0.0          # just behind the head (an arm brought forward)              # which move / view the smear mesh was built for
 var _dash_dir := Vector3.ZERO
 var _knock := Vector3.ZERO
 var _spawn := Vector3.ZERO
+## Takes hits (reactions, knockback) but loses no health (stress tests).
+var god := false
 ## Seconds of invulnerability after being hit.
 var invulnerable_time := 0.9
 
@@ -214,8 +218,9 @@ func _attach(view: StringName, _mirrored: bool) -> void:
 	var arm_z: float = (rig.meshes[&"arm_r_upper"] as MeshInstance3D).mesh.get_aabb().position.z if rig.meshes.has(&"arm_r_upper") else 0.0
 	var p: Vector3 = (_rest[view].shoulder_r as Vector3) - rig.rig_transform(_rest[view].torso).origin
 	# in the body's stack: behind the head, or behind the body with an arm that is
-	var smear_z := arm_z - 0.003 if VIEW_STYLE[view].behind else head_z - 0.003
-	_smear.position = Vector3(p.x, p.y, smear_z)
+	_smear_front_z = head_z - 0.003
+	_smear_z = arm_z - 0.003 if VIEW_STYLE[view].behind else _smear_front_z
+	_smear.position = Vector3(p.x, p.y, _smear_z)
 	torso.add_child(_smear)
 	_smear_key = ""
 
@@ -342,6 +347,8 @@ func charge_ratio() -> float:
 
 ## Lose `n` hit points (F5 / F6 in the overlay test it without enemies).
 func damage(n := 1) -> void:
+	if god:
+		n = 0
 	hp = clampi(hp - n, 0, max_hp)
 	GameEvents.emit(&"hero.hurt", global_position, 1.0, {source = self})
 	if hp == 0:
@@ -557,6 +564,13 @@ func _process(delta: float) -> void:
 	var hand_t := hand_rest.lerp(arc_hand, w)
 	var elbow_out := signf((rd.hand_r as Vector3).x - hips.x) if not side else -fx
 	rig.solve_limb(&"arm_r_upper", &"arm_r_lower", &"hand_r", hand_t, elbow_out if w < 0.5 else -elbow_out)
+	# the move can carry the sword arm (and sword) in front of the body or
+	# behind it: arm_depth +1 clears every part, -1 goes behind them all
+	var arm_depth := float(move.sample(&"arm_depth", f, view)) if move else 0.0
+	var dz := arm_depth * (rig.front_depth(&"arm_r_upper") if arm_depth > 0.0 else -rig.back_depth(&"arm_r_upper"))
+	rig.depth(&"arm_r_upper", dz)
+	if VIEW_STYLE[view].behind:            # the smear comes forward with the arm, behind the head
+		_smear.position.z = _smear_front_z if arm_depth > 0.5 else _smear_z + minf(dz, 0.0)
 	var blade_rest := atan2(sin(deg_to_rad(BLADE_REST_DEG)), cos(deg_to_rad(BLADE_REST_DEG)) * sx)    # held up, tip forward
 	var blade_arc := atan2(sin(phi + blade_off), cos(phi + blade_off) * sx)
 	var blade := lerp_angle(blade_rest, blade_arc, w)

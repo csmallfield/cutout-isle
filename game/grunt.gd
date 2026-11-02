@@ -136,6 +136,9 @@ func _pose(dt: float) -> void:
 	var hand_t: Vector3 = (rd.hand_r as Vector3).lerp(sh + Vector3(cos(phi) * sx, sin(phi), 0) * float(rd.arm_len), w)
 	var elbow := signf((rd.hand_r as Vector3).x - hips.x) if not side else -fx
 	rig.solve_limb(&"arm_r_upper", &"arm_r_lower", &"hand_r", hand_t, elbow if w < 0.5 else -elbow)
+	if state == State.ATTACK and _state_t >= TELEGRAPH:
+		var ad := float(SWING.sample(&"arm_depth", maxf(0.0, (_state_t - TELEGRAPH) * 30.0), cut.view))
+		rig.depth(&"arm_r_upper", ad * rig.front_depth(&"arm_r_upper"))
 	var rest := deg_to_rad(Hero.BLADE_REST_DEG)
 	var blade := lerp_angle(atan2(sin(rest), cos(rest) * sx), atan2(sin(phi), cos(phi) * sx), w)
 	var hx := rig.rig_transform(&"hand_r").basis.x

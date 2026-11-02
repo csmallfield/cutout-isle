@@ -194,7 +194,7 @@ func _physics_process(delta: float) -> void:
 	if r > 0.0 and state != State.KO:
 		move_and_slide()
 		velocity /= r
-	MotionPerfProbe.end(&"enemies", t)
+	MotionPerfProbe.end(&"enemies.brain", t)
 
 
 ## False for enemies that move some other way (hops).
@@ -219,7 +219,7 @@ func _process(delta: float) -> void:
 	# off screen: no posing (the brain and body still run in _physics_process)
 	if _onscreen.is_on_screen() or Engine.get_frames_drawn() < 2:
 		_pose(clock.dt)
-	MotionPerfProbe.end(&"enemies", t)
+	MotionPerfProbe.end(&"enemies.pose", t)
 
 
 ## Hurt the hero if the hitbox overlaps it (once per attack).
