@@ -110,7 +110,7 @@ func _build() -> void:
 	gait.planted.connect(_on_planted)
 
 	# the sword: a card held in hand_r, moved to whichever view is showing
-	_sword = Cutout.card(look, SWORD, 0.13, Vector2(0.5, 136.0 / 160.0))
+	_sword = MotionCutoutRig.card(MotionSvgData.load_any(SWORD), 0.13, look.cutout, look.card_edges, Vector2(0.5, 136.0 / 160.0))
 	_smear = _build_smear()
 	cut.view_changed.connect(_attach)
 	_attach(cut.view, cut.mirrored)
@@ -222,7 +222,7 @@ func _rebuild_smear(move: MotionPoseCurve, view: StringName, sx: float) -> void:
 # ------------------------------------------------------------------ input and movement
 
 func _physics_process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	var r := clock.rate()                     # 0 during this hero's hit-stop
 	var d := delta * r
 	var input := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
@@ -245,10 +245,10 @@ func _physics_process(delta: float) -> void:
 		velocity /= r
 		_move.value = Vector3(velocity.x, 0.0, velocity.z)
 	_update_hitbox()
-	var tg := PerfProbe.begin()
+	var tg := MotionPerfProbe.begin()
 	gait.step(d, global_position, velocity, _face_dir())
-	PerfProbe.end(&"gait", tg)
-	PerfProbe.end(&"hero", t)
+	MotionPerfProbe.end(&"gait", tg)
+	MotionPerfProbe.end(&"hero", t)
 	secondary.physics(delta, r)
 
 
@@ -431,7 +431,7 @@ func _update_hitbox() -> void:
 # ------------------------------------------------------------------ pose (render rate)
 
 func _process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	clock.tick(delta)
 	var dt := clock.dt
 	var tune := Tune.get_or_default()
@@ -558,6 +558,6 @@ func _process(delta: float) -> void:
 		blink = 0.55 if fmod(clock.since(&"hurt") * 2.5, 1.0) < 0.5 else 0.0
 	cut.rig.set_flash(Color("#ffffff"), blink)
 	cut.rotation = Vector3(-minf(clock.since(&"down") * 6.0, 1.45), 0, 0) if hp <= 0 else Vector3.ZERO
-	PerfProbe.end(&"hero.pose", t)
+	MotionPerfProbe.end(&"hero.pose", t)
 	var squash := float(move.sample(&"squash", f, view)) if move else (-0.07 if _charging else 0.0)
 	secondary.render(frac, squash, clampf(spd / speed, 0.0, 1.0))

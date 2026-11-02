@@ -64,7 +64,7 @@ func setup(p_hero: Hero) -> void:
 	_cord.width_from = 0.008
 	_cord.width_to = 0.008
 	_cord.outline = 0.0
-	_pouch_card = Cutout.card(look, "res://art/pouch.svg", 0.07, Vector2(0.5, 4.0 / 44.0))
+	_pouch_card = MotionCutoutRig.card(MotionSvgData.load_any("res://art/pouch.svg"), 0.07, look.cutout, look.card_edges, Vector2(0.5, 4.0 / 44.0))
 	for n in [_ribbon_a, _ribbon_b, _cord, _pouch_card]:
 		hero.cut.flip.add_child(n)
 	hero.cut.view_changed.connect(on_view)
@@ -105,7 +105,7 @@ func _root(svg: Vector2) -> Transform3D:
 
 
 func physics(delta: float, rate: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	var tune := Tune.get_or_default()
 	var dt := delta * (1.0 if tune.chain_flow else rate)
 	if not tune.chains:
@@ -127,11 +127,11 @@ func physics(delta: float, rate: float) -> void:
 	scarf_a.step(dt, _root(sc.root))
 	scarf_b.step(dt, _root(sc.root + Vector2(-6, 2)))
 	pouch.step(dt, _root((POUCH[view] as Dictionary).root))
-	PerfProbe.end(&"chains", t)
+	MotionPerfProbe.end(&"chains", t)
 
 
 func render(frac: float, move_squash: float, run: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	var tune := Tune.get_or_default()
 	_ribbon_a.update(scarf_a.render_points(frac))
 	_ribbon_b.update(scarf_b.render_points(frac))
@@ -147,4 +147,4 @@ func render(frac: float, move_squash: float, run: float) -> void:
 	squash.step(hero.clock.dt)
 	var s := MotionSquash.scale_for(clampf(squash.amount() + move_squash, -0.4, 0.4)) if tune.hero_squash else Vector2.ONE
 	hero.cut.scale = Vector3(s.x, s.y, 1.0)
-	PerfProbe.end(&"secondary", t)
+	MotionPerfProbe.end(&"secondary", t)

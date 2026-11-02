@@ -85,6 +85,9 @@ func _ready() -> void:
 	overlay.hero = hero
 	add_child(overlay)
 
+	# compile every material now, not on the frame it first shows (MotionWarmup)
+	MotionWarmup.run(rig.camera, MotionWarmup.collect(self))
+
 	var args := OS.get_cmdline_user_args()
 	for a in args:
 		if a.begins_with("--actors="):     # extra dummies for the cost budget (hero + N)
@@ -103,10 +106,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	world.tick(delta)
 	look.flat.apply()
-	PerfProbe.end(&"world", t)
+	MotionPerfProbe.end(&"world", t)
 
 
 ## A trigger that moves the hero through a transition (the cave mouth and
@@ -142,7 +145,7 @@ func _travel(hero: Hero, rig: CameraRig, to: Vector3, into_cave: bool) -> void:
 
 
 func _bench_report() -> void:
-	var st := PerfProbe.stats()
+	var st := MotionPerfProbe.stats()
 	var total := 0.0
 	print("BENCH (CPU script cost only; cloud: software GL on shared cores)")
 	for n in st:

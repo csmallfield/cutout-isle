@@ -62,11 +62,11 @@ func _on_event(name: StringName, pos: Vector3, intensity: float, _data: Dictiona
 
 
 func _process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	ripples.step(delta)
 	ripples.apply()
 	MotionGrass3D.tick(grass, ripples.time)
-	PerfProbe.end(&"world", t)
+	MotionPerfProbe.end(&"world", t)
 
 
 func _build() -> void:

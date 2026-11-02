@@ -24,7 +24,7 @@ func _build_visual() -> void:
 	_card = Node3D.new()
 	_card.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_child(_card)
-	_mesh = Cutout.card(look, ART, 0.62, Vector2(0.5, 96.0 / 100.0))
+	_mesh = MotionCutoutRig.card(MotionSvgData.load_any(ART), 0.62, look.cutout, look.card_edges, Vector2(0.5, 96.0 / 100.0))
 	_card.add_child(_mesh)
 
 

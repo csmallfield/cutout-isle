@@ -42,7 +42,7 @@ func _build_visual() -> void:
 		var isl := get_tree().get_first_node_in_group(&"island")
 		var surface: StringName = isl.surface_at(p) if isl else &"grass"
 		GameEvents.emit(StringName("step." + String(surface)), p, 0.4, {source = self}))
-	_sword = Cutout.card(look, Hero.SWORD, 0.12, Vector2(0.5, 136.0 / 160.0))
+	_sword = MotionCutoutRig.card(MotionSvgData.load_any(Hero.SWORD), 0.12, look.cutout, look.card_edges, Vector2(0.5, 136.0 / 160.0))
 	MotionFlat3D.set_tint(_sword, Color(0.85, 0.8, 0.95))
 	cut.view_changed.connect(_attach)
 	_attach(cut.view, false)

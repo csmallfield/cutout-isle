@@ -12,7 +12,7 @@ func _ready() -> void:
 		rig.position = Vector3(x, 0, 0)
 		x += 1.0
 	for pair in [["res://art/pouch.svg", 0.3, Vector3(1.55, 0.9, 0)], ["res://art/tag.svg", 0.4, Vector3(1.55, 0.4, 0)], ["res://art/sword.svg", 0.12, Vector3(-1.6, 0.3, 0)]]:
-		var c := Cutout.card(look, pair[0], pair[1], Vector2(0.5, 0.5))
+		var c := MotionCutoutRig.card(MotionSvgData.load_any(pair[0]), pair[1], look.cutout, look.card_edges, Vector2(0.5, 0.5))
 		c.position = pair[2]
 		add_child(c)
 	var cam := Camera3D.new()

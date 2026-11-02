@@ -147,7 +147,7 @@ func take_hit(info: Dictionary) -> void:
 # ------------------------------------------------------------------ brain and body
 
 func _physics_process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	var r := clock.rate()
 	var dt := delta * r
 	_state_t += dt
@@ -194,7 +194,7 @@ func _physics_process(delta: float) -> void:
 	if r > 0.0 and state != State.KO:
 		move_and_slide()
 		velocity /= r
-	PerfProbe.end(&"enemies", t)
+	MotionPerfProbe.end(&"enemies", t)
 
 
 ## False for enemies that move some other way (hops).
@@ -208,7 +208,7 @@ func _attack_velocity() -> Vector3:
 
 
 func _process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	clock.tick(delta)
 	var f := clock.frames_since(&"hit")
 	var fl := 0.0
@@ -219,7 +219,7 @@ func _process(delta: float) -> void:
 	# off screen: no posing (the brain and body still run in _physics_process)
 	if _onscreen.is_on_screen() or Engine.get_frames_drawn() < 2:
 		_pose(clock.dt)
-	PerfProbe.end(&"enemies", t)
+	MotionPerfProbe.end(&"enemies", t)
 
 
 ## Hurt the hero if the hitbox overlaps it (once per attack).

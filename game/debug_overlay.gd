@@ -1,6 +1,6 @@
 # Debug overlay (F1): frame timing, draw calls, per-system script cost
-# (PerfProbe), and switches for every procedural layer (Tune). Runs last in
-# the frame so it closes PerfProbe's frame.
+# (MotionPerfProbe), and switches for every procedural layer (Tune). Runs last in
+# the frame so it closes MotionPerfProbe's frame.
 #   F1 overlay   F2 time scale (1, 0.5, 0.25)   F3 per-entity / global hit-stop
 #   1 hit-stop  2 shake  3 kick  4 wobble  5 squash  6 flash  7 ring
 #   8 sound  9 bob  0 paper turn  -  smear  C chains  H chains flow
@@ -50,7 +50,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_F3:
 			tune.per_entity = not tune.per_entity
 		KEY_R:
-			PerfProbe.reset_worst()
+			MotionPerfProbe.reset_worst()
 		KEY_F5:
 			if hero: hero.damage(1)
 		KEY_F6:
@@ -63,9 +63,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_since_start += delta
-	PerfProbe.end_frame()
+	MotionPerfProbe.end_frame()
 	if _since_start < 2.0:
-		PerfProbe.reset_worst()       # ignore load hitches
+		MotionPerfProbe.reset_worst()       # ignore load hitches
 	if not visible:
 		return
 	var tune := Tune.get_or_default()
@@ -74,13 +74,13 @@ func _process(delta: float) -> void:
 		Engine.get_frames_per_second(),
 		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
-		PerfProbe.worst_frame_ms,
+		MotionPerfProbe.worst_frame_ms,
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
 	lines.append("renderer %s   time scale %.2f   hit-stop %s   sound %s" % [
 		RenderingServer.get_current_rendering_method(), Engine.time_scale,
 		"per entity" if tune.per_entity else "GLOBAL", "live" if native_ok else "OFF (no native core)"])
 	var total := 0.0
-	var st := PerfProbe.stats()
+	var st := MotionPerfProbe.stats()
 	var names := st.keys()
 	names.sort()
 	for n in names:

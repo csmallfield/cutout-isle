@@ -68,7 +68,7 @@ func screen_dir(at: Vector3, dir: Vector3) -> Vector2:
 
 
 func _process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	if target_node:
 		var p := target_node.get_global_transform_interpolated().origin
 		var v: Vector3 = target_node.velocity if "velocity" in target_node else Vector3.ZERO
@@ -89,4 +89,4 @@ func _process(delta: float) -> void:
 		var k := clampf(persp.value / 0.42, 0.0, 1.0)
 		look.flat.fog_for(lens, CAVE_BG, -1.5, 9.0, 0.85 * k)
 	listener.global_transform = Transform3D(camera.global_basis, _follow.value)
-	PerfProbe.end(&"camera", t)
+	MotionPerfProbe.end(&"camera", t)

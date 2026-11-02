@@ -83,7 +83,7 @@ func _build() -> void:
 	_rope_draw.width_to = 0.018
 	_rope_draw.outline = 0.0
 	add_child(_rope_draw)
-	_tag = Cutout.card(look, "res://art/tag.svg", 0.3, Vector2(0.5, 6.0 / 44.0))
+	_tag = MotionCutoutRig.card(MotionSvgData.load_any("res://art/tag.svg"), 0.3, look.cutout, look.card_edges, Vector2(0.5, 6.0 / 44.0))
 	add_child(_tag)
 	_ring = look.ground_ring(0.86)
 	_ring.position.y = 0.02
@@ -104,7 +104,7 @@ func take_hit(info: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	clock.tick(delta)
 	var tune := Tune.get_or_default()
 	_tilt.step(clock.dt)
@@ -135,12 +135,12 @@ func _process(delta: float) -> void:
 	var d := pts[n - 1] - pts[n - 2]
 	_tag.position = pts[n - 1] + Vector3(0, 0, 0.01)
 	_tag.rotation = Vector3(-0.6, 0.0, atan2(d.y, d.x) + PI * 0.5)     # leaned toward the camera
-	PerfProbe.end(&"dummy", t)
+	MotionPerfProbe.end(&"dummy", t)
 
 
 func _physics_process(delta: float) -> void:
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	var tune := Tune.get_or_default()
 	var dt := (delta * (1.0 if tune.chain_flow else clock.rate())) if tune.chains else 0.0
 	_rope.step(dt, Transform3D(Basis(), _pivot.transform * ROPE_AT))
-	PerfProbe.end(&"chains", t)
+	MotionPerfProbe.end(&"chains", t)

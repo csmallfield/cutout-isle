@@ -84,18 +84,18 @@ func _on_event(name: StringName, pos: Vector3, intensity: float, _data: Dictiona
 		_last_hit = Time.get_ticks_msec() * 0.001
 	if not Tune.get_or_default().sound or MAP.recipe_for(name) == null:
 		return                          # game events without a sound (area, damage_number...)
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	if ok:
 		player.trigger_at(name, pos, intensity)
 	else:
 		_fallback_play(name, pos, intensity)
-	PerfProbe.end(&"sound", t)
+	MotionPerfProbe.end(&"sound", t)
 
 
 func _process(delta: float) -> void:
 	if not ok:
 		return
-	var t := PerfProbe.begin()
+	var t := MotionPerfProbe.begin()
 	var live := player.live
 	var on := Tune.get_or_default().sound
 	# sea: a slow drift in rate (the waves' pitch), wind: gusts
@@ -131,7 +131,7 @@ func _process(delta: float) -> void:
 	if want != _section:
 		_section = want
 		player.song_queue(want, &"bar")
-	PerfProbe.end(&"sound", t)
+	MotionPerfProbe.end(&"sound", t)
 
 
 # ------------------------------------------------------------------ fallback (no native core)
