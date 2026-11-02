@@ -38,6 +38,9 @@ const VIEW_STYLE := {
 	&"side_left": {facing = MotionCutout.LEFT, side = 1.0, fx = -1.0, sx = -1.0, behind = true},
 }
 const SWORD := "res://art/sword.svg"
+## The blade's angle at rest (degrees above forward): tilted up so the tip
+## clears the ground (the hand hangs about 0.22 m up, the blade is longer).
+const BLADE_REST_DEG := 35.0
 const WIDTH := 0.8                    # card width in metres (220 SVG units)
 const ORIGIN := Vector2(110, 318)     # the feet, in SVG units
 
@@ -278,7 +281,17 @@ func _physics_process(delta: float) -> void:
 	if r > 0.0:
 		move_and_slide()
 		velocity /= r
-		_move.value = Vector3(velocity.x, 0.0, velocity.z)
+		# walls stop the walk: feed back only the walk's own velocity, slid
+		# along what it hit. (Feeding back the full velocity put the knockback
+		# into the walk spring, which carried it on and re-added it every frame:
+		# a hit threw the hero across the map.)
+		var walk := Vector3(v.x, 0.0, v.z)
+		for i in get_slide_collision_count():
+			var n := get_slide_collision(i).get_normal()
+			n.y = 0.0
+			if n.length_squared() > 1e-6 and walk.dot(n) < 0.0:
+				walk = walk.slide(n.normalized())
+		_move.value = walk
 	_update_hitbox()
 	var tg := MotionPerfProbe.begin()
 	gait.step(d, global_position, velocity, _face_dir())
@@ -544,7 +557,7 @@ func _process(delta: float) -> void:
 	var hand_t := hand_rest.lerp(arc_hand, w)
 	var elbow_out := signf((rd.hand_r as Vector3).x - hips.x) if not side else -fx
 	rig.solve_limb(&"arm_r_upper", &"arm_r_lower", &"hand_r", hand_t, elbow_out if w < 0.5 else -elbow_out)
-	var blade_rest := atan2(sin(deg_to_rad(-62.0)), cos(deg_to_rad(-62.0)) * sx)    # lowered, tip forward
+	var blade_rest := atan2(sin(deg_to_rad(BLADE_REST_DEG)), cos(deg_to_rad(BLADE_REST_DEG)) * sx)    # held up, tip forward
 	var blade_arc := atan2(sin(phi + blade_off), cos(phi + blade_off) * sx)
 	var blade := lerp_angle(blade_rest, blade_arc, w)
 	var hand_rot := rig.rig_transform(&"hand_r").basis.x

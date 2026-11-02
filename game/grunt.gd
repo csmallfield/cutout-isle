@@ -136,7 +136,8 @@ func _pose(dt: float) -> void:
 	var hand_t: Vector3 = (rd.hand_r as Vector3).lerp(sh + Vector3(cos(phi) * sx, sin(phi), 0) * float(rd.arm_len), w)
 	var elbow := signf((rd.hand_r as Vector3).x - hips.x) if not side else -fx
 	rig.solve_limb(&"arm_r_upper", &"arm_r_lower", &"hand_r", hand_t, elbow if w < 0.5 else -elbow)
-	var blade := lerp_angle(atan2(sin(deg_to_rad(-62.0)), cos(deg_to_rad(-62.0)) * sx), atan2(sin(phi), cos(phi) * sx), w)
+	var rest := deg_to_rad(Hero.BLADE_REST_DEG)
+	var blade := lerp_angle(atan2(sin(rest), cos(rest) * sx), atan2(sin(phi), cos(phi) * sx), w)
 	var hx := rig.rig_transform(&"hand_r").basis.x
 	_sword.rotation.z = blade - PI * 0.5 - atan2(hx.y, hx.x)
 	var glow := 0.0
