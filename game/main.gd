@@ -32,6 +32,7 @@ func _ready() -> void:
 	add_child(dummy)
 	dummy.setup(look, world)
 	dummy.position = Vector3(0.8, 0, 0.6)
+	hero.look_target = dummy
 
 	var rig := CameraRig.new()
 	rig.name = "Camera"

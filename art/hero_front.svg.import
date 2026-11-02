@@ -1,0 +1,15 @@
+[remap]
+
+importer="motion_kit.svg"
+importer_version=2
+type="Resource"
+uid="uid://dh3elnkpfyko2"
+path="res://.godot/imported/hero_front.svg-47d6807bdbb36614e7ae33f68d472665.res"
+
+[deps]
+
+source_file="res://art/hero_front.svg"
+dest_files=["res://.godot/imported/hero_front.svg-47d6807bdbb36614e7ae33f68d472665.res"]
+
+[params]
+

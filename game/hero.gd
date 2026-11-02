@@ -1,9 +1,10 @@
-# The hero for the look spike: 8-way analogue movement, a single sword
-# swing with a hitbox, and a cutout body + head + sword built from SVG cards.
-# Procedural layers (each switchable from the debug overlay through Tune):
-#   breathe / walk bob (pre-gait placeholder), paper-turn flip on facing
-#   change, swing pose from time since the swing (frame-pure), the slash
-#   smear. Phase 2 replaces the bob with gait and IK.
+# The hero: 8-way analogue movement, a sword swing with a hitbox, and a
+# cutout rig in three views (front, back, side) with a paper turn between
+# them (MotionCutout / MotionCutoutRig from the motion kit).
+# Procedural layers on the rig, in order (each switchable through Tune):
+#   hips bob and lean -> legs by IK to foot targets (placeholder step cycle
+#   until 2b's gait) -> arms by IK (sword arm follows the swing arc, the
+#   other swings) -> head look-at and eyes on springs, blinks.
 # Time: everything reads `clock` (a MotionClock under the world clock), so a
 # hit-stop on the hero freezes its pose, its smear and its movement.
 class_name Hero
@@ -11,48 +12,50 @@ extends CharacterBody3D
 
 signal hit_landed(target: Node, info: Dictionary)
 
-const HEAD := "res://art/hero_head.svg"
-const BODY := "res://art/hero_body.svg"
+const VIEWS := {&"front": "res://art/hero_front.svg", &"back": "res://art/hero_back.svg", &"side": "res://art/hero_side.svg"}
 const SWORD := "res://art/sword.svg"
+const WIDTH := 0.8                    # card width in metres (220 SVG units)
+const ORIGIN := Vector2(110, 318)     # the feet, in SVG units
 
 @export var speed := 4.2
 @export var accel_damping := 16.0
 @export var accel_stiffness := 140.0
 ## How far the cards lean back from vertical toward the camera (degrees).
-## 0 = upright (exact occlusion against props behind, most stretch); the
-## camera pitch = facing the camera (no stretch, cards can dip into props
-## behind). Height is compensated so the art keeps its drawn proportions.
 @export var card_lean_deg := 20.0
 ## Swing timing in frames at 30 fps: windup, slash, settle, recover.
 @export var swing_keys := PackedFloat64Array([0.0, 3.0, 6.0, 10.0, 18.0])
-## Sword angle (degrees, in the card plane, + is counter-clockwise) at those keys.
-@export var swing_angles := PackedFloat64Array([-25.0, 60.0, -120.0, -110.0, -25.0])
+## The sword arm's angle around the shoulder at those keys (degrees, card
+## plane, 0 = forward, 90 = up), drawn facing right.
+@export var swing_arc := PackedFloat64Array([40.0, 135.0, -45.0, -58.0, -58.0])
 ## Frames of the swing when the hitbox is live.
 @export var active_from := 3.0
 @export var active_to := 7.0
+## Placeholder step cycle (2b replaces it with foot planting).
+@export var stride := 0.05
+@export var lift := 0.03
 
 var clock: MotionClock
 var look: Look
 var camera_pitch := 50.0
-var aim := Vector3(1, 0, 0)       # last move direction, for the hitbox
-var facing := 1.0                 # +1 right, -1 left (paper turn target)
+var aim := Vector3(1, 0, 0)       # last move direction, for the hitbox and facing
+var look_target: Node3D
 
+var cut: MotionCutout
 var _move := MotionSpring3D.new(Vector3.ZERO, 16.0, 140.0)
-var _flip := MotionSpring.new(1.0, 14.0, 260.0)
-var _visual: Node3D
-var _card: Node3D
-var _flipper: Node3D
-var _body: MeshInstance3D
-var _head: MeshInstance3D
-var _head_pivot: Node3D
-var _sword_pivot: Node3D
+var _head_aim := MotionAimSpring.new(0.0, 11.0, 150.0)
+var _eyes := MotionSpring2D.new(Vector2.ZERO, 14.0, 220.0)
+var _sword: MeshInstance3D
 var _smear: MeshInstance3D
 var _smear_mat: StandardMaterial3D
 var _shadow: MeshInstance3D
 var _hitbox: Area3D
 var _hit_this_swing := {}
-var _swing_id := 0
 var _walk_phase := 0.0
+var _rest := {}                   # view -> cached rest data
+var _keys_a: Array = []           # swing_keys / swing_arc as plain Arrays for MK.interp
+var _arc_a: Array = []
+var _w_keys: Array = []
+var _lunge_keys: Array = []
 
 
 func setup(p_look: Look, world: MotionClock, pitch_deg: float) -> void:
@@ -77,39 +80,26 @@ func _build() -> void:
 	_shadow.position.y = 0.01
 	add_child(_shadow)
 
-	# Everything below is posed in _process: interpolation off, it follows
-	# the body's interpolated transform.
-	_visual = Node3D.new()
-	_visual.name = "Visual"
-	_visual.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	add_child(_visual)
-	_card = Node3D.new()
-	_card.name = "Card"
-	_visual.add_child(_card)
-	_flipper = Node3D.new()
-	_flipper.name = "Flip"
-	_card.add_child(_flipper)
+	cut = MotionCutout.new()
+	cut.name = "Cutout"
+	cut.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF   # posed in _process
+	add_child(cut)
+	for v: StringName in VIEWS:
+		var rig := MotionCutoutRig.build(MotionSvgData.load_any(VIEWS[v]), WIDTH, look.cutout, look.card_edges, {origin = ORIGIN})
+		rig.name = String(v)
+		cut.add_view(v, rig)
+		_rest[v] = _rest_data(rig)
+	cut.lean(camera_pitch, card_lean_deg)
+	_keys_a = Array(swing_keys)
+	_arc_a = Array(swing_arc)
+	_w_keys = [0.0, 2.0, swing_keys[3], swing_keys[4]]
+	_lunge_keys = [swing_keys[1], swing_keys[2], swing_keys[4]]
 
-	const BODY_W := 0.62
-	_body = Cutout.card(look, BODY, BODY_W, Vector2(0.5, 1.0),
-			PackedStringArray(["leg_l", "leg_r", "boot_l", "boot_r", "arm_l", "arm_r", "hand_l", "hand_r", "tunic", "belt"]))
-	_flipper.add_child(_body)
-	var neck := Cutout.point(BODY, Vector2(80, 14), BODY_W)
-	_head_pivot = Node3D.new()
-	_head_pivot.position = neck + Vector3(0, 0, 0.09)
-	_flipper.add_child(_head_pivot)
-	_head = Cutout.card(look, HEAD, 0.74, Vector2(0.5, 0.86),
-			PackedStringArray(["hair_back", "ear_l", "ear_r", "face", "fringe", "tuft"]))
-	_head_pivot.add_child(_head)
-
-	# Sword in the right hand (art right), behind the hand, in front of the tunic.
-	_sword_pivot = Node3D.new()
-	_sword_pivot.position = Cutout.point(BODY, Vector2(132, 96), BODY_W) + Vector3(0, 0, 0.05)
-	_flipper.add_child(_sword_pivot)
-	var sword := Cutout.card(look, SWORD, 0.15, Vector2(0.5, 136.0 / 160.0))
-	_sword_pivot.add_child(sword)
+	# the sword: a card held in hand_r, moved to whichever view is showing
+	_sword = Cutout.card(look, SWORD, 0.13, Vector2(0.5, 136.0 / 160.0))
 	_smear = _build_smear()
-	_sword_pivot.add_child(_smear)
+	cut.view_changed.connect(_attach)
+	_attach(cut.view, cut.mirrored)
 
 	_hitbox = Area3D.new()
 	_hitbox.collision_layer = 1 << 3
@@ -123,24 +113,53 @@ func _build() -> void:
 	add_child(_hitbox)
 
 
-## A crescent behind the blade for the slash frames (in the card plane).
+## What the pose code needs from a view, measured once.
+func _rest_data(rig: MotionCutoutRig) -> Dictionary:
+	var torso: StringName = rig.parent_of[&"arm_r_upper"]
+	var d := {
+		torso = torso,
+		lean_parts = [&"torso", &"chest"].filter(func(n: StringName) -> bool: return rig.has_part(n)),
+		hips = rig.rest_pivot(&"hips"),
+		shoulder_r = rig.rest_pivot(&"arm_r_upper"),
+		hand_r = rig.rest_pivot(&"hand_r"),
+		hand_l = rig.rest_pivot(&"hand_l"),
+		foot_l = rig.rest_pivot(&"foot_l"),
+		foot_r = rig.rest_pivot(&"foot_r"),
+	}
+	d.arm_len = (d.hand_r - d.shoulder_r).length() * 0.98
+	return d
+
+
+## Move the sword and smear into the view that's showing.
+func _attach(view: StringName, _mirrored: bool) -> void:
+	var rig := cut.rig
+	var hand := rig.part(&"hand_r")
+	var hand_mesh: MeshInstance3D = rig.meshes[&"hand_r"]
+	var z := hand_mesh.mesh.get_aabb().position.z      # just behind the hand: the fist covers the grip
+	for n in [_sword, _smear]:
+		if n.get_parent():
+			n.get_parent().remove_child(n)
+	_sword.position = Vector3(0, -0.012, z - 0.025)
+	hand.add_child(_sword)
+	var torso: Node3D = rig.part(_rest[view].torso)
+	_smear.position = (_rest[view].shoulder_r as Vector3) - rig.rig_transform(_rest[view].torso).origin
+	torso.add_child(_smear)
+
+
+## A crescent for the slash frames: the sweep of the sword tip around the
+## shoulder, in the card plane, drawn over everything.
 func _build_smear() -> MeshInstance3D:
 	var st := MotionFlat3D.begin()
-	var seg := 18
+	var seg := 20
+	var r_out := 0.36
 	for i in seg:
-		# the blade's sweep: tip from 150 degrees (windup) to -30 (slash end)
-		var a0 := deg_to_rad(lerpf(150.0, -30.0, float(i) / seg))
-		var a1 := deg_to_rad(lerpf(150.0, -30.0, float(i + 1) / seg))
+		var a0 := deg_to_rad(lerpf(swing_arc[1], swing_arc[2], float(i) / seg))
+		var a1 := deg_to_rad(lerpf(swing_arc[1], swing_arc[2], float(i + 1) / seg))
 		var w0 := sin(PI * float(i) / seg)          # thick in the middle
 		var w1 := sin(PI * float(i + 1) / seg)
-		var r_out := 0.5
 		var p0o := Vector3(cos(a0), sin(a0), 0) * r_out
 		var p1o := Vector3(cos(a1), sin(a1), 0) * r_out
-		var p0i := p0o * (1.0 - 0.38 * w0)
-		var p1i := p1o * (1.0 - 0.38 * w1)
-		MotionFlat3D.quad(st, p0i, p1i, p1o, p0o, Vector3.BACK, Vector2.ZERO, Color("#fffbe8"))
-	# Drawn over everything (no depth test): a smear is an effect on the
-	# picture, and a card's arc would otherwise dip under the ground.
+		MotionFlat3D.quad(st, p0o * (1.0 - 0.45 * w0), p1o * (1.0 - 0.45 * w1), p1o, p0o, Vector3.BACK, Vector2.ZERO, Color("#fffbe8"))
 	_smear_mat = StandardMaterial3D.new()
 	_smear_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_smear_mat.vertex_color_use_as_albedo = true
@@ -149,7 +168,6 @@ func _build_smear() -> MeshInstance3D:
 	_smear_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_smear_mat.render_priority = 1
 	var mi := MotionFlat3D.instance(st.commit(), _smear_mat)
-	mi.position.z = -0.01
 	mi.visible = false
 	return mi
 
@@ -161,15 +179,12 @@ func _physics_process(delta: float) -> void:
 	var r := clock.rate()                     # 0 during this hero's hit-stop
 	var d := delta * r
 	var input := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
-	var want := Vector3(input.x, 0.0, input.y) * speed
 	_move.damping = accel_damping
 	_move.stiffness = accel_stiffness
-	_move.target = want
+	_move.target = Vector3(input.x, 0.0, input.y) * speed
 	var v := _move.step(d)
 	if input.length() > 0.2:
 		aim = Vector3(input.x, 0.0, input.y).normalized()
-		if absf(input.x) > 0.25:
-			facing = signf(input.x)
 	velocity = v * r                          # frozen in place while stopped
 	if r > 0.0:
 		move_and_slide()
@@ -186,10 +201,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Start a swing (ignored while one is still slashing).
 func swing() -> void:
-	var f := clock.frames_since(&"swing")
-	if f < swing_keys[3]:
+	if clock.frames_since(&"swing") < swing_keys[3]:
 		return
-	_swing_id += 1
 	_hit_this_swing.clear()
 	clock.mark(&"swing", {aim = aim})
 	GameEvents.emit(&"swing", global_position, 1.0, {source = self})
@@ -197,9 +210,8 @@ func swing() -> void:
 
 func _update_hitbox() -> void:
 	var f := clock.frames_since(&"swing")
-	var live := f >= active_from and f <= active_to
 	_hitbox.position = aim * 0.62 + Vector3(0, 0.5, 0)
-	if not live:
+	if f < active_from or f > active_to:
 		return
 	for area in _hitbox.get_overlapping_areas():
 		var target := area.get_parent() as Node3D
@@ -219,40 +231,87 @@ func _update_hitbox() -> void:
 func _process(delta: float) -> void:
 	var t := PerfProbe.begin()
 	clock.tick(delta)
-	var d := clock.dt
+	var dt := clock.dt
 	var tune := Tune.get_or_default()
 
-	# Cards: lean toward the camera, stretched so the art keeps its proportions.
-	var lean := deg_to_rad(card_lean_deg)
-	_card.rotation = Vector3(-lean, 0, 0)
-	_card.scale = Vector3(1, 1.0 / cos(deg_to_rad(camera_pitch) - lean), 1)
+	# facing: the swing's aim while slashing, else where we move
+	var f := clock.frames_since(&"swing")
+	var swinging := f < swing_keys[4]
+	var face_dir: Vector3 = clock.last_data(&"swing").get("aim", aim) if swinging else aim
+	cut.paper_turn = tune.paper_turn
+	cut.face(Vector2(face_dir.x, face_dir.z))
+	cut.lean(camera_pitch, card_lean_deg)
+	cut.step(dt)
 
-	# Paper turn: the flip passes through zero when facing changes.
-	_flip.target = facing
-	var fx := _flip.step(d) if tune.paper_turn else facing
-	_flipper.scale = Vector3(fx, 1, 1)
+	var rig := cut.rig
+	var rd: Dictionary = _rest[cut.view]
+	var side := cut.view == &"side"
+	var sx := -1.0 if cut.view == &"back" else 1.0     # back view: the sword arm is on screen left
+	rig.reset_pose()
 
-	# Breathing and a walk bob (placeholder for phase 2's gait).
+	# hips: walk bob, breathing, lean into the motion
 	var spd := Vector2(velocity.x, velocity.z).length()
 	var walk := clampf(spd / speed, 0.0, 1.0)
-	_walk_phase += d * lerpf(0.0, 9.0, walk)
-	var breathe := sin(clock.time * TAU * 0.45) * 0.012 * (1.0 - walk)
-	var bob := absf(sin(_walk_phase)) * 0.045 * walk if tune.bob else 0.0
-	_visual.scale = Vector3(1.0 - breathe * 0.5, 1.0 + breathe, 1.0) if tune.bob else Vector3.ONE
-	_head_pivot.rotation.z = (sin(_walk_phase) * 0.06 * walk if tune.bob else 0.0)
+	_walk_phase += dt * lerpf(0.0, 10.0, walk)
+	var breathe := sin(clock.time * TAU * 0.45) * (1.0 - walk)
+	var bob := -absf(cos(_walk_phase)) * 0.012 * walk if tune.bob else 0.0
+	rig.pose(&"hips", 0.0, Vector2(0, bob + breathe * 0.002))
+	var fwd := absf(velocity.x) / speed if side else 0.0
+	for p: StringName in rd.lean_parts:
+		rig.pose(p, -0.12 * fwd if tune.bob else 0.0)
 
-	# Swing: a pure function of frames since the swing on the hero's clock.
-	var f := clock.frames_since(&"swing")
-	var ang := MK.interp(f, Array(swing_keys), Array(swing_angles), MK.ease_out)
-	_sword_pivot.rotation.z = deg_to_rad(ang)
+	# legs: IK to foot targets (placeholder step cycle; 2b plants them)
+	var s := sin(_walk_phase)
+	var c := cos(_walk_phase)
+	var step_x := stride * walk * (1.0 if side else 0.15)
+	var fl: Vector3 = rd.foot_l + Vector3(s * step_x, maxf(0.0, c) * lift * walk, 0)
+	var fr: Vector3 = rd.foot_r + Vector3(-s * step_x, maxf(0.0, -c) * lift * walk, 0)
+	var hips: Vector3 = rd.hips
+	rig.solve_limb(&"leg_l_upper", &"leg_l_lower", &"foot_l", fl, 1.0 if side else signf(fl.x - hips.x))
+	rig.solve_limb(&"leg_r_upper", &"leg_r_lower", &"foot_r", fr, 1.0 if side else signf(fr.x - hips.x))
+
+	# sword arm: rest by the side, or around the shoulder along the swing arc
+	var w := MK.interp(f, _w_keys, [0.0, 1.0, 1.0, 0.0], MK.ease_in_out) if swinging else 0.0
+	var phi := deg_to_rad(MK.interp(f, _keys_a, _arc_a, MK.ease_out)) if swinging else 0.0
+	var sh: Vector3 = rig.rig_transform(rd.torso) * (rig.rest[&"arm_r_upper"] as Transform3D).origin
+	var arc_hand := sh + Vector3(cos(phi) * sx, sin(phi), 0) * (rd.arm_len as float)
+	var hand_rest: Vector3 = rd.hand_r + Vector3(0, bob, 0)
+	var hand_t := hand_rest.lerp(arc_hand, w)
+	var elbow_out := signf((rd.hand_r as Vector3).x - hips.x) if not side else -1.0
+	rig.solve_limb(&"arm_r_upper", &"arm_r_lower", &"hand_r", hand_t, elbow_out if w < 0.5 else -elbow_out)
+	var blade_rest := atan2(sin(deg_to_rad(-62.0)), cos(deg_to_rad(-62.0)) * sx)    # lowered, tip forward
+	var blade_arc := atan2(sin(phi), cos(phi) * sx)
+	var blade := lerp_angle(blade_rest, blade_arc, w)
+	var hand_rot := rig.rig_transform(&"hand_r").basis.x
+	_sword.rotation.z = blade - PI * 0.5 - atan2(hand_rot.y, hand_rot.x)
+
+	# other arm: hangs and swings against the legs
+	var hl: Vector3 = rd.hand_l + Vector3(-s * step_x * 0.8, bob, 0)
+	rig.solve_limb(&"arm_l_upper", &"arm_l_lower", &"hand_l", hl, signf((rd.hand_l as Vector3).x - hips.x) if not side else -1.0)
+
+	# head: look at the target with lag, eyes lead, blinks keep the hold alive
+	var look_dir := Vector2.ZERO
+	if look_target and is_instance_valid(look_target):
+		var to := look_target.global_position - global_position
+		if to.length() < 5.0:
+			look_dir = Vector2(to.x, to.z).normalized()
+	var mirror := -1.0 if cut.mirrored else 1.0
+	_head_aim.limit_min = deg_to_rad(-9.0)
+	_head_aim.limit_max = deg_to_rad(9.0)
+	_head_aim.target = -look_dir.x * mirror * deg_to_rad(7.0) * (0.0 if side else 1.0) + (sin(_walk_phase) * 0.05 * walk if tune.bob else 0.0)
+	rig.pose(&"head", _head_aim.step(dt))
+	_eyes.target = Vector2(look_dir.x * mirror * (0.6 if side else 1.0), -look_dir.y * 0.5) * 0.012
+	var eo := _eyes.step(dt)
+	if rig.has_part(&"eyes"):
+		var blink := 1.0 - 0.9 * MK.win(fmod(clock.time, 3.7) * 30.0, 0.0, 4.0, 1.5)
+		rig.pose(&"eyes", 0.0, eo, Vector2(1.0, blink))
+
+	# smear and lunge
 	var smear_on := tune.smear and f >= swing_keys[1] and f < swing_keys[3] + 2.0
 	_smear.visible = smear_on
 	if smear_on:
-		# drawn relative to the blade: counter the pivot so the arc stays put
-		_smear.rotation.z = -deg_to_rad(ang)
-		var o := 1.0 - MK.prog(f, swing_keys[2], 6.0)
-		_smear_mat.albedo_color = Color(1, 1, 1, 0.85 * o)
-	# a small lunge into the slash
-	var lunge := MK.interp(f, [swing_keys[1], swing_keys[2], swing_keys[4]], [0.0, 1.0, 0.0], MK.ease_out)
-	_visual.position = Vector3(0, bob, 0) + aim * 0.08 * lunge
+		_smear.scale = Vector3(sx, 1, 1)
+		_smear_mat.albedo_color = Color(1, 1, 1, 0.85 * (1.0 - MK.prog(f, swing_keys[2], 6.0)))
+	var lunge := MK.interp(f, _lunge_keys, [0.0, 1.0, 0.0], MK.ease_out) if swinging else 0.0
+	cut.position = face_dir * 0.08 * lunge
 	PerfProbe.end(&"hero.pose", t)

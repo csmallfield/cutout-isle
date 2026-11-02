@@ -38,7 +38,7 @@ func _init(parent: Node) -> void:
 	white_instanced = flat.material(Color.WHITE, Color(0.86, 0.86, 0.86), Color(0.66, 0.66, 0.68), Color(0, 0, 0, 0), 0.0, false, false, true)
 	cutout = flat.cutout()
 	edges = flat.edges(INK, 2.2, 0.03)
-	card_edges = flat.edges(INK, 2.6, 0.003)
+	card_edges = flat.edges(INK, 2.6, 0.001)
 	flat.fixed.append(edges)
 	flat.fixed.append(card_edges)
 	atlas = MotionDecalAtlas.new(Vector2i(256, 128))

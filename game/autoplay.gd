@@ -21,7 +21,6 @@ func _physics_process(_delta: float) -> void:
 			Input.action_press(&"move_right")
 	elif t < 6.4:
 		Input.action_press(&"move_up")
-		Input.action_press(&"move_right")
 	elif t < 9.0:
 		Input.action_press(&"move_left")
 		if fmod(t, 0.5) < 0.02:
