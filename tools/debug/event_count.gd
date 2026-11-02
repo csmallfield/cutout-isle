@@ -18,7 +18,7 @@ func _hook() -> void:
 
 func _process(_d: float) -> bool:
 	frames += 1
-	if frames >= 1020:
+	if frames >= 1800:
 		var keys := counts.keys()
 		keys.sort()
 		for k in keys:

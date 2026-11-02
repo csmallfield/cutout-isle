@@ -59,6 +59,7 @@ func _on_event(name: StringName, pos: Vector3, intensity: float, data: Dictionar
 		return
 	var tune := Tune.get_or_default()
 	var target: Node = data.get("target")
+	var hero_hurt := target != null and target.is_in_group(&"hero")
 	var dir: Vector3 = data.get("dir", Vector3.ZERO)
 	if tune.hitstop:
 		var hold := tune.hitstop_hold * pow(maxf(intensity, 0.3), 0.6)
@@ -68,7 +69,7 @@ func _on_event(name: StringName, pos: Vector3, intensity: float, data: Dictionar
 					(n.clock as MotionClock).freeze(hold, tune.hitstop_ease)
 		else:
 			world.freeze(hold, tune.hitstop_ease)
-	rig.hit(rig.screen_dir(pos, dir), 0.22 * intensity)
+	rig.hit(rig.screen_dir(pos, dir), (0.4 if hero_hurt else 0.22) * intensity)
 	if tune.rings:
 		_spawn_star(pos, rig.screen_dir(pos, dir), intensity)
 
@@ -122,6 +123,7 @@ func _process(delta: float) -> void:
 
 func _attacker_of(target: Node) -> Node:
 	if target and "clock" in target:
-		var info: Dictionary = (target.clock as MotionClock).last_data(&"hit")
+		var c := target.clock as MotionClock
+		var info: Dictionary = c.last_data(&"hurt") if target.is_in_group(&"hero") else c.last_data(&"hit")
 		return info.get("attacker")
 	return null

@@ -67,9 +67,14 @@ var _charging := false
 var _charge_t := 0.0
 var _smear_key := ""              # which move / view the smear mesh was built for
 var _dash_dir := Vector3.ZERO
+var _knock := Vector3.ZERO
+var _spawn := Vector3.ZERO
+## Seconds of invulnerability after being hit.
+var invulnerable_time := 0.9
 
 
 func setup(p_look: Look, world: MotionClock, pitch_deg: float) -> void:
+	add_to_group(&"hero")
 	look = p_look
 	clock = MotionClock.new(world)
 	camera_pitch = pitch_deg
@@ -114,6 +119,20 @@ func _build() -> void:
 	secondary.name = "Secondary"
 	add_child(secondary)
 	secondary.setup(self)
+
+	var hurt := Area3D.new()
+	hurt.name = "Hurtbox"
+	hurt.collision_layer = 1 << 6
+	hurt.collision_mask = 0
+	hurt.monitoring = false
+	var hcs := CollisionShape3D.new()
+	var hcap := CapsuleShape3D.new()
+	hcap.radius = 0.28
+	hcap.height = 1.0
+	hcs.shape = hcap
+	hcs.position.y = 0.5
+	hurt.add_child(hcs)
+	add_child(hurt)
 
 	_hitbox = Area3D.new()
 	_hitbox.collision_layer = 1 << 3
@@ -217,7 +236,10 @@ func _physics_process(delta: float) -> void:
 		var u := clock.since(&"dash") / dash_time
 		v = _dash_dir * dash_speed * (1.0 - u * u * 0.6)      # a burst that eases off at the end
 		_move.value = v
-	velocity = v * r                          # frozen in place while stopped
+	_knock = _knock.lerp(Vector3.ZERO, 1.0 - exp(-d * 8.0))
+	if hp <= 0:
+		v = Vector3.ZERO
+	velocity = (v + _knock) * r                # frozen in place while stopped
 	if r > 0.0:
 		move_and_slide()
 		velocity /= r
@@ -250,21 +272,62 @@ func _on_planted(_foot: int, pos: Vector3) -> void:
 	GameEvents.emit(StringName("step." + String(surface)), pos, clampf(0.35 + spd * 0.65, 0.0, 1.0), {source = self, surface = surface})
 
 
+## Look at the nearest enemy (or the dummy) within reach.
+func _pick_look_target() -> void:
+	var best: Node3D = null
+	var bd := 5.0
+	for n in get_tree().get_nodes_in_group(&"lookable"):
+		var e := n as Node3D
+		if e == null or (e.has_method(&"is_alive") and not e.is_alive()):
+			continue
+		var d := e.global_position.distance_to(global_position)
+		if d < bd:
+			bd = d
+			best = e
+	look_target = best
+
+
 ## 0..1 while charging (the riser's pitch and level follow it).
 func charge_ratio() -> float:
 	return clampf(_charge_t / charge_time, 0.0, 1.0) if _charging else 0.0
 
 
-## Lose `n` hit points (enemies arrive in phase 6; F5 / F6 in the overlay test it).
+## Lose `n` hit points (F5 / F6 in the overlay test it without enemies).
 func damage(n := 1) -> void:
 	hp = clampi(hp - n, 0, max_hp)
+	GameEvents.emit(&"hero.hurt", global_position, 1.0, {source = self})
+	if hp == 0:
+		clock.mark(&"down")
 
 
 func heal(n := 1) -> void:
 	hp = clampi(hp + n, 0, max_hp)
+	GameEvents.emit(&"hero.heal", global_position, 1.0, {source = self})
+
+
+## Hit by an enemy: info = {dir, power, attacker}. Knockback, a short
+## hit-stop on both (Juice), a blinking spell of invulnerability.
+func take_damage(info: Dictionary) -> bool:
+	if hp <= 0 or clock.since(&"hurt") < invulnerable_time:
+		return false
+	var dir: Vector3 = info.get("dir", Vector3.BACK)
+	clock.mark(&"hurt", info)
+	_knock = dir * 5.5
+	_charging = false
+	if current_move():
+		clock.mark(&"swing", {})
+	damage(1)
+	GameEvents.emit(&"hit.flesh", global_position + Vector3(0, 0.6, 0), 0.9, {target = self, dir = dir, attacker = info.get("attacker")})
+	return true
+
+
+func is_down() -> bool:
+	return hp <= 0
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if hp <= 0:
+		return
 	if event.is_action_pressed(&"attack"):
 		attack()
 	elif event.is_action_pressed(&"dash"):
@@ -373,6 +436,12 @@ func _process(delta: float) -> void:
 	var dt := clock.dt
 	var tune := Tune.get_or_default()
 
+	if hp <= 0 and clock.since(&"down") > 2.2:
+		hp = max_hp
+		global_position = _spawn
+		reset_physics_interpolation()
+		GameEvents.emit(&"hero.heal", global_position, 1.0, {source = self})
+	_pick_look_target()
 	# moves first (a chained hit starts this frame), then facing
 	_update_moves(dt)
 	var move := current_move()
@@ -483,6 +552,12 @@ func _process(delta: float) -> void:
 	_smear.visible = smear_on
 	var lunge := float(move.sample(&"lunge", f, view)) if move else 0.0
 	cut.position = face_dir * lunge
+	# hurt: a blink (2.5 a second, small: photosensitivity), and down: fall flat
+	var blink := 0.0
+	if clock.since(&"hurt") < invulnerable_time:
+		blink = 0.55 if fmod(clock.since(&"hurt") * 2.5, 1.0) < 0.5 else 0.0
+	cut.rig.set_flash(Color("#ffffff"), blink)
+	cut.rotation = Vector3(-minf(clock.since(&"down") * 6.0, 1.45), 0, 0) if hp <= 0 else Vector3.ZERO
 	PerfProbe.end(&"hero.pose", t)
 	var squash := float(move.sample(&"squash", f, view)) if move else (-0.07 if _charging else 0.0)
 	secondary.render(frac, squash, clampf(spd / speed, 0.0, 1.0))

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100">
+  <!-- A hopping blob, resting on (60, 96). Squashes about its base. -->
+  <path id="body" fill="#9b6fd6" d="M10 92 C6 60 26 18 60 16 C94 18 114 60 110 92 C96 100 24 100 10 92 Z"/>
+  <path id="belly" class="flat" fill="#b892ea" d="M28 86 C28 66 44 52 60 52 C76 52 92 66 92 86 C76 92 44 92 28 86 Z"/>
+  <path id="shine" class="flat" fill="#e2d1fa" d="M34 36 C40 28 50 25 56 27 C50 32 44 38 40 46 C36 44 33 40 34 36 Z"/>
+  <ellipse id="eye_l" class="flat" fill="#1f1a26" cx="46" cy="58" rx="6" ry="9"/>
+  <ellipse id="eye_r" class="flat" fill="#1f1a26" cx="74" cy="58" rx="6" ry="9"/>
+  <circle id="glint_l" class="flat" fill="#ffffff" cx="48" cy="54" r="2.2"/>
+  <circle id="glint_r" class="flat" fill="#ffffff" cx="76" cy="54" r="2.2"/>
+  <path id="mouth" class="flat" fill="#3b2050" d="M54 72 C57 76 63 76 66 72 C63 73 57 73 54 72 Z"/>
+</svg>

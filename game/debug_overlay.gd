@@ -33,6 +33,7 @@ func _ready() -> void:
 	_label.add_theme_constant_override(&"shadow_offset_x", 1)
 	_label.add_theme_constant_override(&"shadow_offset_y", 1)
 	add_child(_label)
+	visible = not OS.get_cmdline_user_args().has("--autoplay")     # clean captures
 
 
 func _unhandled_key_input(event: InputEvent) -> void:

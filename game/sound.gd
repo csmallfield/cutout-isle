@@ -28,6 +28,7 @@ const POOLS := {
 var player: AKLivePlayer
 var ok := false
 var hero: Node3D
+var island: Node
 var load_ms := 0.0
 
 var _sea := -1
@@ -81,8 +82,8 @@ func _start_voices() -> void:
 func _on_event(name: StringName, pos: Vector3, intensity: float, _data: Dictionary) -> void:
 	if String(name).begins_with("hit."):
 		_last_hit = Time.get_ticks_msec() * 0.001
-	if not Tune.get_or_default().sound:
-		return
+	if not Tune.get_or_default().sound or MAP.recipe_for(name) == null:
+		return                          # game events without a sound (area, damage_number...)
 	var t := PerfProbe.begin()
 	if ok:
 		player.trigger_at(name, pos, intensity)
@@ -121,7 +122,12 @@ func _process(delta: float) -> void:
 				_heart_t = 0.62 if hp <= 1 else 0.85
 				player.trigger(&"heart", 1.0)
 	# music: combat while hits keep landing, explore after a quiet spell
-	var want := "combat" if now - _last_hit < combat_hold else "explore"
+	var engaged := false
+	for e in get_tree().get_nodes_in_group(&"enemies"):
+		if e.is_engaged():
+			engaged = true
+			break
+	var want := "combat" if engaged or now - _last_hit < combat_hold * 0.5 else "explore"
 	if want != _section:
 		_section = want
 		player.song_queue(want, &"bar")

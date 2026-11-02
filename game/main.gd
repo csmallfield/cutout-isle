@@ -1,6 +1,6 @@
-# Phase 1 look-and-feel spike: one outlined, flat-shaded island chunk under
-# Forward+, an orthographic follow camera, the cutout hero and the training
-# dummy. Wires the world clock, the event bus, juice, sound and the overlay.
+# Cutout Isle: the island chunk and its cave, the hero, the training dummy,
+# blobs and sword grunts, the follow camera, juice, sound, the HUD and the
+# debug overlay, wired to one world clock and the GameEvents bus.
 extends Node3D
 
 const PITCH := 50.0
@@ -25,13 +25,15 @@ func _ready() -> void:
 	hero.name = "Hero"
 	add_child(hero)
 	hero.setup(look, world, PITCH)
-	hero.position = Vector3(-1.2, 0, 0.7)
+	hero.position = Vector3(-3.0, 0, -0.2)
+	hero._spawn = hero.position
 
 	var dummy := Dummy.new()
 	dummy.name = "Dummy"
 	add_child(dummy)
 	dummy.setup(look, world)
-	dummy.position = Vector3(0.8, 0, 0.6)
+	dummy.position = Vector3(-1.0, 0, 0.5)
+	dummy.add_to_group(&"lookable")
 	hero.look_target = dummy
 
 	var rig := CameraRig.new()
@@ -41,6 +43,30 @@ func _ready() -> void:
 	rig.target_node = hero
 	rig.snap_to(hero.position + Vector3(0, 0.5, 0))
 
+	var env := WorldEnvironment.new()
+	env.environment = Environment.new()
+	env.environment.background_mode = Environment.BG_COLOR
+	env.environment.background_color = CameraRig.SKY
+	add_child(env)
+	rig.env = env.environment
+	rig.look = look
+
+	for spec in [[Blob, Vector3(-11.0, 0, -3.0)], [Blob, Vector3(-12.5, 0, 0.5)], [Blob, Vector3(-9.5, 0, -0.5)],
+			[Grunt, Vector3(5.0, 0, -5.5)], [Grunt, Vector3(3.0, 0, -8.2)],
+			[Blob, Island.CAVE + Vector3(2.5, 0, -4.0)], [Grunt, Island.CAVE + Vector3(-2.5, 0, -6.0)]]:
+		var e: Enemy = (spec[0] as GDScript).new()
+		add_child(e)
+		e.setup(look, world, hero, spec[1])
+
+	_portal(Island.CAVE_MOUTH + Vector3(0, 0, 0.3), Island.CAVE_SPAWN, true, hero, rig)
+	_portal(Island.CAVE + Vector3(0, 0, 5.6), Island.MOUTH_SPAWN, false, hero, rig)
+
+	var hud := Hud.new()
+	hud.name = "Hud"
+	hud.hero = hero
+	hud.camera = rig.camera
+	add_child(hud)
+
 	var juice := Juice.new()
 	juice.name = "Juice"
 	add_child(juice)
@@ -49,6 +75,7 @@ func _ready() -> void:
 	hero.island = island
 	var sound := Sound.new()
 	sound.name = "Sound"
+	sound.island = island
 	sound.hero = hero
 	add_child(sound)
 
@@ -80,6 +107,38 @@ func _process(delta: float) -> void:
 	world.tick(delta)
 	look.flat.apply()
 	PerfProbe.end(&"world", t)
+
+
+## A trigger that moves the hero through a transition (the cave mouth and
+## the way back out), switching the camera's cave mode on the way.
+func _portal(at: Vector3, to: Vector3, into_cave: bool, hero: Hero, rig: CameraRig) -> void:
+	var a := Area3D.new()
+	a.collision_layer = 0
+	a.collision_mask = 1 << 1
+	var cs := CollisionShape3D.new()
+	var b := BoxShape3D.new()
+	b.size = Vector3(2.2, 2.0, 0.8)
+	cs.shape = b
+	cs.position.y = 1.0
+	a.add_child(cs)
+	a.position = at
+	add_child(a)
+	a.body_entered.connect(func(body: Node3D) -> void:
+		if body != hero or MotionTransition.busy:
+			return
+		_travel(hero, rig, to, into_cave))
+
+
+func _travel(hero: Hero, rig: CameraRig, to: Vector3, into_cave: bool) -> void:
+	var origin := rig.camera.unproject_position(hero.global_position + Vector3(0, 0.6, 0))
+	await MotionTransition.cover("circle", origin)
+	hero.global_position = to
+	hero.reset_physics_interpolation()
+	hero.aim = Vector3(0, 0, -1) if into_cave else Vector3(0, 0, 1)
+	rig.snap_to(to + Vector3(0, 0.5, 0))
+	rig.set_cave(into_cave)
+	GameEvents.emit(&"area", to, 1.0, {cave = into_cave})
+	await MotionTransition.uncover("circle")
 
 
 func _bench_report() -> void:

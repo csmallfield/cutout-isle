@@ -21,6 +21,12 @@ var lens: MotionLens3D
 var trauma := MotionTrauma.new(11.0)
 var target_node: Node3D
 var _follow := MotionSpring3D.new(Vector3.ZERO, 13.0, 70.0)
+## Perspective strength (0 = orthographic): the cave's lens moment.
+var persp := MotionSpring.new(0.0, 9.0, 40.0)
+var look: Look
+var env: Environment
+const SKY := Color(0.2, 0.55, 0.68)
+const CAVE_BG := Color("#120f17")
 
 
 func _ready() -> void:
@@ -38,6 +44,14 @@ func _ready() -> void:
 
 func snap_to(p: Vector3) -> void:
 	_follow.snap(p)
+
+
+## In the cave the lens eases into a narrow perspective (a dolly zoom: the
+## hero keeps its size while depth opens up), with dark fog and background.
+func set_cave(on: bool) -> void:
+	persp.target = 0.42 if on else 0.0
+	if env:
+		env.background_color = CAVE_BG if on else SKY
 
 
 func hit(screen_dir: Vector2, amount: float) -> void:
@@ -68,6 +82,11 @@ func _process(delta: float) -> void:
 	lens.frame_h = frame_h
 	lens.basis = MotionLens3D.extrude_basis(0.0, pitch) * Basis(Vector3.BACK, trauma.roll())
 	lens.offset = trauma.offset()
+	lens.fov = 50.0
+	lens.persp = maxf(persp.step(real_dt), 0.0)
 	lens.apply(camera)
+	if look:
+		var k := clampf(persp.value / 0.42, 0.0, 1.0)
+		look.flat.fog_for(lens, CAVE_BG, -1.5, 9.0, 0.85 * k)
 	listener.global_transform = Transform3D(camera.global_basis, _follow.value)
 	PerfProbe.end(&"camera", t)

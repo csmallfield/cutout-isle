@@ -1,0 +1,15 @@
+[remap]
+
+importer="motion_kit.svg"
+importer_version=2
+type="Resource"
+uid="uid://bm370rff5d1ob"
+path="res://.godot/imported/heart_empty.svg-3ddf5e8adf8d9965112e9de9c6435203.res"
+
+[deps]
+
+source_file="res://art/heart_empty.svg"
+dest_files=["res://.godot/imported/heart_empty.svg-3ddf5e8adf8d9965112e9de9c6435203.res"]
+
+[params]
+
