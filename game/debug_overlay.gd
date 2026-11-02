@@ -3,7 +3,8 @@
 # the frame so it closes PerfProbe's frame.
 #   F1 overlay   F2 time scale (1, 0.5, 0.25)   F3 per-entity / global hit-stop
 #   1 hit-stop  2 shake  3 kick  4 wobble  5 squash  6 flash  7 ring
-#   8 sound  9 bob  0 paper turn  -  smear   R reset worst frame
+#   8 sound  9 bob  0 paper turn  -  smear  C chains  H chains flow
+#   through hit-stop  Q hero squash   R reset worst frame
 extends CanvasLayer
 
 var _label: Label
@@ -15,6 +16,7 @@ var native_ok := false
 const KEYS := {
 	KEY_1: "hitstop", KEY_2: "shake", KEY_3: "kick", KEY_4: "wobble", KEY_5: "squash",
 	KEY_6: "flash", KEY_7: "rings", KEY_8: "sound", KEY_9: "bob", KEY_0: "paper_turn", KEY_MINUS: "smear",
+	KEY_C: "chains", KEY_H: "chain_flow", KEY_Q: "hero_squash",
 }
 
 
@@ -81,7 +83,7 @@ func _process(delta: float) -> void:
 		lines.append("  %-12s %6.0f us avg  %6.0f max" % [n, v.x, v.y])
 	lines.append("  %-12s %6.0f us avg (script, budget 2000)" % ["total", total])
 	var sw := PackedStringArray()
-	var order := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS]
+	var order := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_C, KEY_H, KEY_Q]
 	for key in order:
 		var prop: String = KEYS[key]
 		sw.append("%s %s%s" % [OS.get_keycode_string(key), prop, "" if tune.get(prop) else " OFF"])

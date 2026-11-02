@@ -1,0 +1,15 @@
+[remap]
+
+importer="motion_kit.svg"
+importer_version=2
+type="Resource"
+uid="uid://db7fafoftf3km"
+path="res://.godot/imported/pouch.svg-8c68b989dced13c0115e1b6214bf17bc.res"
+
+[deps]
+
+source_file="res://art/pouch.svg"
+dest_files=["res://.godot/imported/pouch.svg-8c68b989dced13c0115e1b6214bf17bc.res"]
+
+[params]
+

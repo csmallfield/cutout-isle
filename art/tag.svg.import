@@ -1,0 +1,15 @@
+[remap]
+
+importer="motion_kit.svg"
+importer_version=2
+type="Resource"
+uid="uid://bjued3rbepy02"
+path="res://.godot/imported/tag.svg-16b61c5e4f6eccddf0fc5ac7251ab3f0.res"
+
+[deps]
+
+source_file="res://art/tag.svg"
+dest_files=["res://.godot/imported/tag.svg-16b61c5e4f6eccddf0fc5ac7251ab3f0.res"]
+
+[params]
+

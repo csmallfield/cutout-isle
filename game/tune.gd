@@ -18,6 +18,10 @@ var sound := true
 var bob := true
 var paper_turn := true
 var smear := true
+var chains := true
+## Chains keep moving through a hit-stop (on real time) instead of freezing.
+var chain_flow := false
+var hero_squash := true
 
 static var _t: Tune
 

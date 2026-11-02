@@ -35,6 +35,8 @@
       <path id="collar" fill="#f4e9c8" d="M90 172 L130 172 L110 192 Z"/>
       <rect id="belt" fill="#5b3a26" x="57" y="240" width="106" height="12" rx="3"/>
       <rect id="buckle" class="flat" fill="#e8b84a" x="102" y="238" width="16" height="16" rx="3"/>
+      <path id="scarf" fill="#d8433b" d="M78 178 C92 188 128 188 142 178 L144 190 C128 202 92 202 76 190 Z"/>
+      <path id="scarf_knot" fill="#c23a33" d="M118 188 L132 186 L134 200 L120 202 Z"/>
       <g id="head"><circle id="pivot-head" cx="110" cy="182" r="2" fill="none"/>
         <g transform="translate(10, 4)">
           <path id="hair_back" fill="#8a3f2a" d="M100 18 C150 18 186 52 184 104 C183 136 170 160 150 170 L50 170 C30 160 17 136 16 104 C14 52 50 18 100 18 Z"/>

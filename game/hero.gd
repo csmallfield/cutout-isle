@@ -42,6 +42,7 @@ var look_target: Node3D
 
 var cut: MotionCutout
 var gait: MotionGait
+var secondary: HeroSecondary
 var _move := MotionSpring3D.new(Vector3.ZERO, 16.0, 140.0)
 var _head_aim := MotionAimSpring.new(0.0, 11.0, 150.0)
 var _eyes := MotionSpring2D.new(Vector2.ZERO, 14.0, 220.0)
@@ -102,6 +103,11 @@ func _build() -> void:
 	_smear = _build_smear()
 	cut.view_changed.connect(_attach)
 	_attach(cut.view, cut.mirrored)
+
+	secondary = HeroSecondary.new()
+	secondary.name = "Secondary"
+	add_child(secondary)
+	secondary.setup(self)
 
 	_hitbox = Area3D.new()
 	_hitbox.collision_layer = 1 << 3
@@ -197,6 +203,7 @@ func _physics_process(delta: float) -> void:
 	gait.step(d, global_position, velocity, _face_dir())
 	PerfProbe.end(&"gait", tg)
 	PerfProbe.end(&"hero", t)
+	secondary.physics(delta, r)
 
 
 func _face_dir() -> Vector3:
@@ -336,3 +343,4 @@ func _process(delta: float) -> void:
 	var lunge := MK.interp(f, _lunge_keys, [0.0, 1.0, 0.0], MK.ease_out) if swinging else 0.0
 	cut.position = face_dir * 0.08 * lunge
 	PerfProbe.end(&"hero.pose", t)
+	secondary.render(frac, f, swing_keys, clampf(spd / speed, 0.0, 1.0))

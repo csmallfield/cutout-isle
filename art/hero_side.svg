@@ -37,12 +37,13 @@
       <path id="collar" fill="#f4e9c8" d="M112 172 L130 174 L124 188 Z"/>
       <rect id="belt" fill="#5b3a26" x="78" y="240" width="68" height="12" rx="3"/>
       <rect id="buckle" class="flat" fill="#e8b84a" x="134" y="238" width="10" height="16" rx="3"/>
+      <path id="scarf" fill="#d8433b" d="M88 176 C100 184 122 184 132 178 L134 190 C122 198 100 198 86 190 Z"/>
       <g id="head"><circle id="pivot-head" cx="112" cy="182" r="2" fill="none"/>
         <g transform="translate(10, 4)">
           <path id="hair_back" fill="#8a3f2a" d="M92 18 C142 16 178 50 176 100 C175 132 162 158 140 168 L42 168 C24 156 12 132 12 100 C12 50 44 20 92 18 Z"/>
+          <circle id="ear_l" fill="#f2bf96" cx="64" cy="128" r="12"/>
           <ellipse id="face" fill="#f7cfa6" cx="116" cy="122" rx="56" ry="58"/>
           <circle id="nose" fill="#f7cfa6" cx="168" cy="130" r="5"/>
-          <circle id="ear_l" fill="#f2bf96" cx="86" cy="126" r="10"/>
           <ellipse id="blush_l" class="flat" fill="#f3998a" cx="146" cy="144" rx="11" ry="7"/>
           <g id="eyes"><circle id="pivot-eyes" cx="146" cy="122" r="2" fill="none"/>
             <ellipse id="eye_l" class="flat" fill="#1f1a26" cx="146" cy="122" rx="8" ry="13.5"/>

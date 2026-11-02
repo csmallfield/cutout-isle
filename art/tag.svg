@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 44">
+  <!-- A wooden tag on a rope, hung from its hole (30, 6). -->
+  <path id="board" fill="#d9a066" d="M6 10 L54 10 L54 38 L6 38 Z"/>
+  <path id="grain" class="flat" fill="#c58b52" d="M10 20 L50 20 L50 23 L10 23 Z M14 29 L46 29 L46 31 L14 31 Z"/>
+  <circle id="hole" class="flat" fill="#5b3a26" cx="30" cy="15" r="2.6"/>
+</svg>

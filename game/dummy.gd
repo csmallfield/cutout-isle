@@ -6,6 +6,8 @@
 #   squash  volume-preserving squash from frames since the hit (pure)
 #   flash   a small warm tint, at most 3 a second (photosensitivity)
 #   ring    an impact ring running out on the ground
+#   tag     a wooden tag on a rope from the crossbar (MotionChain), swinging
+#           as the dummy wobbles
 class_name Dummy
 extends StaticBody3D
 
@@ -17,6 +19,10 @@ var _pivot: Node3D
 var _body: MeshInstance3D
 var _ring: MeshInstance3D
 var _flash_ok := true
+var _rope := MotionChain.new(5, 0.06)
+var _rope_draw := MotionRibbon3D.new()
+var _tag: MeshInstance3D
+const ROPE_AT := Vector3(0.36, 0.86, 0.05)     # on the crossbar, in the pivot's space
 
 
 func setup(p_look: Look, world: MotionClock) -> void:
@@ -67,6 +73,17 @@ func _build() -> void:
 	var shadow := look.ground_decal(look.blob_uv, Vector2(0.42, 0.3), Color(0.1, 0.12, 0.2, 0.55))
 	shadow.position.y = 0.01
 	add_child(shadow)
+	_rope.drag = 0.8
+	_rope.damping = 0.03
+	_rope.teleport(Transform3D(Basis(), ROPE_AT))
+	_rope_draw.material_override = look.cutout
+	_rope_draw.color = Color("#7d5430")
+	_rope_draw.width_from = 0.018
+	_rope_draw.width_to = 0.018
+	_rope_draw.outline = 0.0
+	add_child(_rope_draw)
+	_tag = Cutout.card(look, "res://art/tag.svg", 0.3, Vector2(0.5, 6.0 / 44.0))
+	add_child(_tag)
 	_ring = look.ground_ring(0.86)
 	_ring.position.y = 0.02
 	_ring.visible = false
@@ -110,4 +127,18 @@ func _process(delta: float) -> void:
 		var r := lerpf(0.35, 1.5, 1.0 - pow(1.0 - u, 3.0))
 		_ring.scale = Vector3(r, 1, r)
 		(_ring.material_override as StandardMaterial3D).albedo_color = Color(1, 1, 1, 0.9 * (1.0 - u))
+	var pts := _rope.render_points(Engine.get_physics_interpolation_fraction())
+	_rope_draw.update(pts)
+	var n := pts.size()
+	var d := pts[n - 1] - pts[n - 2]
+	_tag.position = pts[n - 1] + Vector3(0, 0, 0.01)
+	_tag.rotation = Vector3(-0.6, 0.0, atan2(d.y, d.x) + PI * 0.5)     # leaned toward the camera
 	PerfProbe.end(&"dummy", t)
+
+
+func _physics_process(delta: float) -> void:
+	var t := PerfProbe.begin()
+	var tune := Tune.get_or_default()
+	var dt := (delta * (1.0 if tune.chain_flow else clock.rate())) if tune.chains else 0.0
+	_rope.step(dt, Transform3D(Basis(), _pivot.transform * ROPE_AT))
+	PerfProbe.end(&"chains", t)

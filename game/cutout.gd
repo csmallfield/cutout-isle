@@ -12,8 +12,8 @@ const LAYER := 0.012
 
 
 ## A card `width` metres wide from the SVG at `path`. `anchor` (fractions of
-## the viewBox) sits at the origin; `outline` lists part ids to outline (all
-## parts when empty). Returns the card; its outline is child "Edges".
+## the viewBox) sits at the origin; `outline` lists part ids to outline
+## (when empty: every part without class "flat"). Returns the card; its outline is child "Edges".
 static func card(look: Look, path: String, width: float, anchor := Vector2(0.5, 1.0), outline: PackedStringArray = PackedStringArray()) -> MeshInstance3D:
 	var data := MotionSvgData.load_any(path)
 	var opts := {flat = true, depth = 0.0, layer = LAYER, anchor = anchor}
@@ -23,6 +23,10 @@ static func card(look: Look, path: String, width: float, anchor := Vector2(0.5, 
 	for id in outline:
 		for i in data.find(id):
 			only.append(i)
+	if outline.is_empty():          # every part but class "flat" (as MotionCutoutRig)
+		for i in data.parts.size():
+			if not (data.parts[i].classes as PackedStringArray).has("flat"):
+				only.append(i)
 	var eo := opts.duplicate()
 	if not only.is_empty():
 		eo["only"] = only

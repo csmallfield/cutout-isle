@@ -24,6 +24,7 @@
       <path id="tunic" fill="#4fa86c" d="M82 172 L138 172 C152 176 160 190 162 210 L170 280 C150 288 70 288 50 280 L58 210 C60 190 68 176 82 172 Z"/>
       <path id="seam" class="flat" fill="#3f8f5c" d="M107 178 L113 178 L114 238 L106 238 Z"/>
       <rect id="belt" fill="#5b3a26" x="57" y="240" width="106" height="12" rx="3"/>
+      <path id="scarf" fill="#d8433b" d="M78 178 C92 188 128 188 142 178 L144 190 C128 202 92 202 76 190 Z"/>
       <g id="head"><circle id="pivot-head" cx="110" cy="182" r="2" fill="none"/>
         <g transform="translate(10, 4)">
           <circle id="ear_l" fill="#f2bf96" cx="168" cy="120" r="13"/>
